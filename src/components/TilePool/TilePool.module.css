@@ -1,5 +1,5 @@
 .panel {
-  width: 140px;
+  width: 180px;
   flex-shrink: 0;
   background: #fff;
   border-right: 1px solid #e0e0e0;
@@ -22,9 +22,51 @@
 .pool {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  align-content: start;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ── Tile family card ──────────────────────────────── */
+
+.family {
+  display: flex;
+  flex-direction: column;
+}
+
+.family.hasChildren {
+  background: #f8f9fa;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 5px;
+}
+
+.parentRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.collapseBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 8px;
+  padding: 2px;
+  line-height: 1;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.collapseBtn:hover {
+  color: #666;
+}
+
+/* ── Offcut tree container ────────────────────────── */
+
+.offcutTree {
+  margin-top: 4px;
+  padding-left: 4px;
 }

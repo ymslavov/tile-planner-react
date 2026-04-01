@@ -1,0 +1,20 @@
+.container {
+  position: relative;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #e8e8e8;
+  flex-shrink: 0;
+}
+
+.imageWrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.img {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}

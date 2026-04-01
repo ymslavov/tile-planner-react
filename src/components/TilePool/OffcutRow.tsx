@@ -1,5 +1,6 @@
-import type { Piece, Wall } from '../../store/types';
+import type { Piece, Wall, Orientation } from '../../store/types';
 import { getChildPieces } from '../../services/pieceHelpers';
+import { OffcutThumbnail } from './OffcutThumbnail';
 import styles from './OffcutRow.module.css';
 
 interface OffcutRowProps {
@@ -7,14 +8,18 @@ interface OffcutRowProps {
   parentPieces: Piece[];
   placed: Map<string, { wallId: string; location: string }>;
   walls: Wall[];
+  orientation: Orientation;
   depth: number;
 }
+
+const MAX_THUMB_HEIGHT = 50;
 
 export function OffcutRow({
   pieces,
   parentPieces,
   placed,
   walls,
+  orientation,
   depth,
 }: OffcutRowProps) {
   const rows: React.ReactNode[] = [];
@@ -23,7 +28,7 @@ export function OffcutRow({
     const isPlaced = placed.has(piece.id);
     const wallInfo = isPlaced ? placed.get(piece.id)! : null;
     const wall = wallInfo ? walls.find((w) => w.id === wallInfo.wallId) : null;
-    const depthClass = depth <= 1 ? styles.depth1 : styles.depth2;
+    const children = getChildPieces(pieces, piece.id);
 
     const handleDragStart = (e: React.DragEvent) => {
       e.dataTransfer.setData(
@@ -34,39 +39,45 @@ export function OffcutRow({
     };
 
     rows.push(
-      <div
-        key={piece.id}
-        className={`${styles.row} ${depthClass} ${isPlaced ? styles.placed : ''}`}
-        draggable={!isPlaced}
-        onDragStart={isPlaced ? undefined : handleDragStart}
-      >
-        <span className={styles.indent}>
-          {depth <= 1 ? '\u2514 ' : '  \u2514 '}
-        </span>
-        <span className={styles.info}>
-          {piece.id} [{piece.width.toFixed(1)}&times;{piece.height.toFixed(1)}]
-        </span>
-        {isPlaced && wall && (
-          <span className={styles.wallLabel}> &mdash; {wall.name}</span>
+      <div key={piece.id} className={styles.offcutItem}>
+        <div
+          className={`${styles.content} ${isPlaced ? styles.placed : ''}`}
+          draggable={!isPlaced}
+          onDragStart={isPlaced ? undefined : handleDragStart}
+        >
+          <div className={styles.thumbWrap}>
+            <OffcutThumbnail
+              piece={piece}
+              orientation={orientation}
+              maxHeight={MAX_THUMB_HEIGHT}
+            />
+            <span className={styles.badge}>{piece.id}</span>
+          </div>
+          <div className={styles.meta}>
+            <span className={styles.dims}>
+              {piece.width.toFixed(1)}&times;{piece.height.toFixed(1)}
+            </span>
+            {isPlaced && wall && (
+              <span className={styles.wallBadge}>{wall.name}</span>
+            )}
+          </div>
+        </div>
+
+        {children.length > 0 && (
+          <div className={styles.childTree}>
+            <OffcutRow
+              pieces={pieces}
+              parentPieces={children}
+              placed={placed}
+              walls={walls}
+              orientation={orientation}
+              depth={depth + 1}
+            />
+          </div>
         )}
       </div>
     );
-
-    // Render children recursively
-    const children = getChildPieces(pieces, piece.id);
-    if (children.length > 0) {
-      rows.push(
-        <OffcutRow
-          key={`offcuts-${piece.id}`}
-          pieces={pieces}
-          parentPieces={children}
-          placed={placed}
-          walls={walls}
-          depth={depth + 1}
-        />
-      );
-    }
   }
 
-  return <>{rows}</>;
+  return <div className={styles.offcutList}>{rows}</div>;
 }

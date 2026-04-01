@@ -1,39 +1,120 @@
-.row {
+.offcutList {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Single offcut item with connector ──────────── */
+
+.offcutItem {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Tree connector lines ──────────────────────── */
+
+/* Vertical line runs down the left side of each item */
+.offcutItem::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #d4d4d4;
+}
+
+/* Hide vertical line below the last item's horizontal connector */
+.offcutItem:last-child::before {
+  bottom: auto;
+  height: 24px;
+}
+
+/* Horizontal connector to the content */
+.offcutItem::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 24px;
+  width: 10px;
+  height: 1px;
+  background: #d4d4d4;
+}
+
+/* ── Offcut content card ──────────────────────── */
+
+.content {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 6px;
-  font-size: 11px;
-  color: #555;
-  grid-column: 1 / -1;
-  border-top: 1px solid #f0f0f0;
+  gap: 6px;
+  padding: 4px 4px 4px 22px;
+  margin: 2px 0;
   cursor: grab;
+  border-radius: 4px;
+  transition: box-shadow 0.15s, background 0.15s;
+}
+
+.content:hover:not(.placed) {
+  background: #f0f4ff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .placed {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
 
-.depth1 {
-  padding-left: 12px;
+/* ── Thumbnail wrapper ────────────────────────── */
+
+.thumbWrap {
+  position: relative;
+  flex-shrink: 0;
 }
 
-.depth2 {
-  padding-left: 24px;
+.badge {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  background: #fbbf24;
+  color: #000;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0 3px;
+  border-radius: 2px;
+  line-height: 14px;
+  white-space: nowrap;
+  z-index: 1;
 }
 
-.indent {
-  color: #ccc;
-  font-family: monospace;
-  white-space: pre;
+/* ── Metadata ─────────────────────────────────── */
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.info {
-  font-weight: 500;
-}
-
-.wallLabel {
+.dims {
+  font-size: 9px;
   color: #999;
-  font-size: 10px;
+  white-space: nowrap;
+}
+
+.wallBadge {
+  display: inline-block;
+  background: #e0e7ff;
+  color: #4338ca;
+  font-size: 8px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 8px;
+  white-space: nowrap;
+  line-height: 14px;
+}
+
+/* ── Nested children ─────────────────────────── */
+
+.childTree {
+  margin-left: 16px;
 }
