@@ -1,0 +1,38 @@
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -0.2px;
+  margin-right: 8px;
+}
+
+.sep {
+  width: 1px;
+  height: 20px;
+  background: #e0e0e0;
+}
+
+.controlGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.label {
+  font-size: 11px;
+  color: #666;
+  margin-right: 4px;
+  white-space: nowrap;
+}

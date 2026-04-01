@@ -1,0 +1,59 @@
+.container {
+  margin-top: 12px;
+  padding: 8px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.heading {
+  font-size: 11px;
+  font-weight: 700;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+}
+
+.surface {
+  display: inline-block;
+  margin: 8px;
+  vertical-align: top;
+}
+
+.surfaceTitle {
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 4px 0;
+  font-weight: 600;
+}
+
+.surfaceGrid {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.slotEl {
+  box-sizing: border-box;
+}
+
+.partial {
+  border-color: #f59e0b !important;
+  border-width: 2px !important;
+}
+
+.lipInfo {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: #f0f5ff;
+  border: 1px solid #c7d7f7;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #3b5bdb;
+}
+
+.lipItem {
+  display: inline-block;
+  margin-top: 3px;
+  margin-right: 10px;
+  color: #555;
+}

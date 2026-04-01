@@ -1,0 +1,74 @@
+.slot {
+  position: absolute;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: border-color 0.1s;
+}
+
+.slot:hover {
+  border-color: #4a90d9;
+  z-index: 2;
+}
+
+.slot[draggable='true'] {
+  cursor: grab;
+}
+
+.slot[draggable='true']:active {
+  cursor: grabbing;
+}
+
+.partial {
+  border-color: #f59e0b !important;
+  border-width: 2px !important;
+}
+
+.nicheCut {
+  border-color: #ef4444 !important;
+  border-width: 2px !important;
+}
+
+.hidden {
+  background: transparent;
+  border: none;
+  pointer-events: none;
+}
+
+.empty {
+  border: 1px dashed #ccc !important;
+  background: #fafafa !important;
+  position: relative;
+}
+
+.empty:hover::after {
+  content: 'Drop tile';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #aaa;
+  pointer-events: none;
+}
+
+.label {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-size: 9px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0 2px;
+  border-radius: 2px;
+  line-height: 1.4;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Drag feedback */
+.slot:global(.drag-over) {
+  box-shadow: inset 0 0 0 3px #2563eb;
+}

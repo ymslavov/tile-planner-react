@@ -1,0 +1,134 @@
+.panel {
+  width: 200px;
+  flex-shrink: 0;
+  background: #fff;
+  border-left: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.header {
+  padding: 8px 12px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #ebebeb;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fieldLabel {
+  font-size: 11px;
+  color: #555;
+  font-weight: 600;
+}
+
+.fieldInline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fieldInline input[type='number'] {
+  flex: 1;
+  min-width: 0;
+}
+
+.unit {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+}
+
+.unitSmall {
+  font-size: 10px;
+  color: #888;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #ebebeb;
+  margin: 0;
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkRow input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.checkRow span {
+  font-size: 12px;
+  color: #333;
+}
+
+.nicheSettings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #f5f8ff;
+  border: 1px solid #c7d7f7;
+  border-radius: 5px;
+}
+
+.nicheHeader {
+  font-size: 11px;
+  font-weight: 700;
+  color: #3b5bdb;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.fieldRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nicheLabel {
+  font-size: 11px;
+  color: #555;
+  min-width: 60px;
+}
+
+.nicheInput {
+  padding: 3px 6px;
+  font-size: 11px;
+  flex: 1;
+  min-width: 0;
+}
+
+.footer {
+  padding: 10px 12px;
+  border-top: 1px solid #ebebeb;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

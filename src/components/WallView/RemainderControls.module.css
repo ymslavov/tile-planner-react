@@ -1,0 +1,28 @@
+.controls {
+  padding: 8px 16px;
+  background: #fff;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.mainLabel {
+  font-size: 11px;
+  color: #555;
+  font-weight: 600;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.groupLabel {
+  font-size: 11px;
+  color: #555;
+  font-weight: 600;
+}
