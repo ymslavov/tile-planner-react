@@ -29,6 +29,22 @@ import {
   getPiecePlacement,
 } from '../services/pieceHelpers';
 
+/**
+ * Niche surfaces have fixed dimensions based on the niche and which surface:
+ * - back: width × height (facing the room, at the deepest point)
+ * - left/right: depth × height (vertical side walls)
+ * - top/bottom: width × depth (horizontal ceiling/floor)
+ */
+function getNicheSurfaceDims(niche: Niche, surfaceKey: NicheSurfaceKey): { w: number; h: number } {
+  switch (surfaceKey) {
+    case 'back':   return { w: niche.width, h: niche.height };
+    case 'left':   return { w: niche.depth, h: niche.height };
+    case 'right':  return { w: niche.depth, h: niche.height };
+    case 'top':    return { w: niche.width, h: niche.depth };
+    case 'bottom': return { w: niche.width, h: niche.depth };
+  }
+}
+
 interface TilePlannerActions {
   // Initialization
   initialize: () => void;
@@ -63,6 +79,8 @@ interface TilePlannerActions {
   placeNicheTile: (wallId: string, surfaceKey: NicheSurfaceKey, slotKey: string, pieceId: string) => void;
   unplaceNicheTile: (wallId: string, surfaceKey: NicheSurfaceKey, slotKey: string) => void;
   swapNicheTiles: (wallId: string, fromSurface: NicheSurfaceKey, fromKey: string, toSurface: NicheSurfaceKey, toKey: string) => void;
+  rotateNichePlacement: (wallId: string, surfaceKey: NicheSurfaceKey, slotKey: string) => void;
+  setNicheOffsets: (wallId: string, surfaceKey: NicheSurfaceKey, slotKey: string, offsetX: number, offsetY: number) => void;
 
   // File operations
   doExportJSON: () => void;
@@ -669,20 +687,51 @@ export const useStore = create<Store>((set, get) => ({
 
   placeNicheTile: (wallId, surfaceKey, slotKey, pieceId) => {
     const state = get();
-    const newWalls = state.walls.map((w) => {
-      if (w.id !== wallId || !w.nicheTiles) return w;
-      return {
-        ...w,
-        nicheTiles: {
-          ...w.nicheTiles,
-          [surfaceKey]: {
-            ...w.nicheTiles[surfaceKey],
-            [slotKey]: { pieceId, rotation: 0, offsetX: 0, offsetY: 0 },
-          },
+    const wall = state.walls.find((w) => w.id === wallId);
+    if (!wall?.niche || !wall.nicheTiles) return;
+
+    // Compute the dimensions of the niche surface being targeted.
+    const surfaceDims = getNicheSurfaceDims(wall.niche, surfaceKey);
+
+    let newPieces = { ...state.pieces };
+    let newWalls = [...state.walls];
+
+    // If there's an existing placement here, cascade-delete its offcuts first.
+    const existing = wall.nicheTiles[surfaceKey][slotKey];
+    if (existing) {
+      const result = cascadeDelete(newPieces, newWalls, existing.pieceId);
+      newPieces = result.pieces;
+      newWalls = result.walls;
+      for (const r of result.removedPlacements) {
+        get().showToast(`Piece ${r.pieceId} removed from ${r.wallName}`);
+      }
+    }
+
+    // Niche surfaces are single-slot grids at the surface's true dimensions,
+    // so slotKey is always '0,0' and the slot covers the whole surface.
+    const slotW = surfaceDims.w;
+    const slotH = surfaceDims.h;
+
+    // Write the placement.
+    const wIdx = newWalls.findIndex((w) => w.id === wallId);
+    newWalls[wIdx] = {
+      ...newWalls[wIdx],
+      nicheTiles: {
+        ...newWalls[wIdx].nicheTiles!,
+        [surfaceKey]: {
+          ...newWalls[wIdx].nicheTiles![surfaceKey],
+          [slotKey]: { pieceId, rotation: 0, offsetX: 0, offsetY: 0 },
         },
-      };
-    });
-    set({ walls: newWalls });
+      },
+    };
+
+    // Create offcuts — a 60×120 tile dropped on a 45×45 niche back produces
+    // 3 offcut pieces (right strip, bottom strip, corner piece).
+    const offcutResult = createOffcuts(newPieces, pieceId, slotW, slotH, 0, 0, 0);
+    newPieces = offcutResult.pieces;
+
+    set({ pieces: newPieces, walls: newWalls });
+    get()._applyWrapAround();
     get()._save();
   },
 
@@ -741,6 +790,114 @@ export const useStore = create<Store>((set, get) => ({
       return { ...w, nicheTiles: nt };
     });
     set({ walls: newWalls });
+    get()._save();
+  },
+
+  rotateNichePlacement: (wallId, surfaceKey, slotKey) => {
+    const state = get();
+    const wall = state.walls.find((w) => w.id === wallId);
+    if (!wall?.niche || !wall.nicheTiles) return;
+    const placement = wall.nicheTiles[surfaceKey][slotKey];
+    if (!placement) return;
+    const piece = state.pieces[placement.pieceId];
+    if (!piece) return;
+
+    const surfaceDims = getNicheSurfaceDims(wall.niche, surfaceKey);
+
+    // Find next valid rotation where the piece still covers the surface
+    const current = placement.rotation || 0;
+    const candidates = [90, 180, 270, 0].map((d) => (current + d) % 360);
+    let nextRot = current;
+    for (const c of candidates) {
+      const eff = getEffectiveDims(piece, c);
+      if (eff.w >= surfaceDims.w - 0.01 && eff.h >= surfaceDims.h - 0.01) {
+        nextRot = c;
+        break;
+      }
+    }
+    if (nextRot === current) return;
+
+    // Cascade delete existing offcuts, update rotation, recreate offcuts
+    let newPieces = { ...state.pieces };
+    let newWalls = [...state.walls];
+    const result = cascadeDelete(newPieces, newWalls, placement.pieceId);
+    newPieces = result.pieces;
+    newWalls = result.walls;
+    for (const r of result.removedPlacements) {
+      get().showToast(`Piece ${r.pieceId} removed from ${r.wallName}`);
+    }
+
+    const wIdx = newWalls.findIndex((w) => w.id === wallId);
+    newWalls[wIdx] = {
+      ...newWalls[wIdx],
+      nicheTiles: {
+        ...newWalls[wIdx].nicheTiles!,
+        [surfaceKey]: {
+          ...newWalls[wIdx].nicheTiles![surfaceKey],
+          [slotKey]: { ...placement, rotation: nextRot },
+        },
+      },
+    };
+
+    const offcutResult = createOffcuts(newPieces, placement.pieceId, surfaceDims.w, surfaceDims.h, nextRot, placement.offsetX ?? 0, placement.offsetY ?? 0);
+    newPieces = offcutResult.pieces;
+
+    set({ pieces: newPieces, walls: newWalls });
+    get()._applyWrapAround();
+    get()._save();
+  },
+
+  setNicheOffsets: (wallId, surfaceKey, slotKey, offsetX, offsetY) => {
+    const state = get();
+    const wall = state.walls.find((w) => w.id === wallId);
+    if (!wall?.niche || !wall.nicheTiles) return;
+    const placement = wall.nicheTiles[surfaceKey][slotKey];
+    if (!placement) return;
+    const piece = state.pieces[placement.pieceId];
+    if (!piece) return;
+
+    const surfaceDims = getNicheSurfaceDims(wall.niche, surfaceKey);
+    const eff = getEffectiveDims(piece, placement.rotation || 0);
+
+    // Clamp to valid range: piece must still fully cover the surface
+    const minX = surfaceDims.w - eff.w;
+    const minY = surfaceDims.h - eff.h;
+    const clampedX = Math.max(minX, Math.min(0, offsetX));
+    const clampedY = Math.max(minY, Math.min(0, offsetY));
+
+    if (
+      Math.abs(clampedX - (placement.offsetX ?? 0)) < 0.01 &&
+      Math.abs(clampedY - (placement.offsetY ?? 0)) < 0.01
+    ) {
+      return; // no change
+    }
+
+    let newPieces = { ...state.pieces };
+    let newWalls = [...state.walls];
+    const result = cascadeDelete(newPieces, newWalls, placement.pieceId);
+    newPieces = result.pieces;
+    newWalls = result.walls;
+    for (const r of result.removedPlacements) {
+      get().showToast(`Piece ${r.pieceId} removed from ${r.wallName}`);
+    }
+
+    const wIdx = newWalls.findIndex((w) => w.id === wallId);
+    newWalls[wIdx] = {
+      ...newWalls[wIdx],
+      nicheTiles: {
+        ...newWalls[wIdx].nicheTiles!,
+        [surfaceKey]: {
+          ...newWalls[wIdx].nicheTiles![surfaceKey],
+          [slotKey]: { ...placement, offsetX: clampedX, offsetY: clampedY },
+        },
+      },
+    };
+
+    const offcutResult = createOffcuts(newPieces, placement.pieceId, surfaceDims.w, surfaceDims.h, placement.rotation || 0, clampedX, clampedY);
+    newPieces = offcutResult.pieces;
+
+    set({ pieces: newPieces, walls: newWalls });
+    get()._applyWrapAround();
     get()._save();
   },
 

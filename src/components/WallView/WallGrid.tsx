@@ -62,7 +62,14 @@ export function WallGrid({
         );
       })}
 
-      {nicheRect && <NicheOverlay nicheRect={nicheRect} scale={scale} />}
+      {nicheRect && (
+        <NicheOverlay
+          nicheRect={nicheRect}
+          scale={scale}
+          wall={wall}
+          pieces={pieces}
+        />
+      )}
     </div>
   );
 }
