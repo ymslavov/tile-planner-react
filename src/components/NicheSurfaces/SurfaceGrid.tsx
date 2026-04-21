@@ -83,6 +83,14 @@ function SlotCell({
     }
   };
 
+  const unplaceNicheTile = useStore((s) => s.unplaceNicheTile);
+  const wallIdFromStore = useStore((s) => s.activeWallId);
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    unplaceNicheTile(wallIdFromStore, surfaceKey, slotKey);
+  };
+
   const tileId = piece ? piece.sourceTileId : null;
   const ir = piece?.imageRegion || { x: 0, y: 0, w: tileW, h: tileH };
   const rot = placement?.rotation || 0;
@@ -97,16 +105,17 @@ function SlotCell({
     };
   }
 
+  const slotClass = `${styles.slotEl} ${slot.isPartialW || slot.isPartialH ? styles.partial : ''} ${cascadeAffected ? 'pulseHighlight' : ''}${placement ? ' wall-slot-placed' : ''}`;
+
   return (
     <div
-      className={`${styles.slotEl} ${slot.isPartialW || slot.isPartialH ? styles.partial : ''} ${cascadeAffected ? 'pulseHighlight' : ''}`}
+      className={slotClass}
       style={{
         position: 'absolute',
         left: `${slot.x * surfaceScale}px`,
         top: `${slot.y * surfaceScale}px`,
         width: `${slot.w * surfaceScale}px`,
         height: `${slot.h * surfaceScale}px`,
-        overflow: 'hidden',
         border: placement ? '1px solid #e0e0e0' : '1px dashed #ccc',
         background: placement ? '#fff' : '#fafafa',
         boxSizing: 'border-box',
@@ -119,38 +128,57 @@ function SlotCell({
     >
       {placement && tileId && (
         <>
-          <img
-            src={`/tiles/${tileId}.jpg`}
-            alt={`Tile ${tileId}`}
+          <div
             style={{
               position: 'absolute',
-              left: `${-(ir.x * surfaceScale)}px`,
-              top: `${-(ir.y * surfaceScale)}px`,
-              width: `${60 * surfaceScale}px`,
-              height: `${120 * surfaceScale}px`,
-              ...rotCss,
-            }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-          <span
-            style={{
-              position: 'absolute',
-              bottom: '1px',
-              right: '2px',
-              fontSize: '8px',
-              color: '#fff',
-              background: 'rgba(0,0,0,0.45)',
-              padding: '0 2px',
-              borderRadius: '2px',
-              lineHeight: '1.4',
-              pointerEvents: 'none',
-              zIndex: 3,
+              inset: 0,
+              overflow: 'hidden',
             }}
           >
-            {tileId}
-          </span>
+            <img
+              src={`/tiles/${tileId}.jpg`}
+              alt={`Tile ${tileId}`}
+              style={{
+                position: 'absolute',
+                left: `${-(ir.x * surfaceScale)}px`,
+                top: `${-(ir.y * surfaceScale)}px`,
+                width: `${60 * surfaceScale}px`,
+                height: `${120 * surfaceScale}px`,
+                ...rotCss,
+              }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+            <span
+              style={{
+                position: 'absolute',
+                bottom: '1px',
+                right: '2px',
+                fontSize: '8px',
+                color: '#fff',
+                background: 'rgba(0,0,0,0.45)',
+                padding: '0 2px',
+                borderRadius: '2px',
+                lineHeight: '1.4',
+                pointerEvents: 'none',
+                zIndex: 3,
+              }}
+            >
+              {tileId}
+            </span>
+          </div>
+          {!readOnly && (
+            <button
+              className="niche-remove-btn"
+              title="Remove tile from niche surface"
+              onClick={handleRemove}
+              onMouseDown={(e) => e.stopPropagation()}
+              draggable={false}
+            >
+              &#x2715;
+            </button>
+          )}
         </>
       )}
     </div>

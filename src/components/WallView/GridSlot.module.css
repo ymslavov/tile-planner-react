@@ -3,13 +3,21 @@
   background: #fff;
   border: 1px solid #e0e0e0;
   box-sizing: border-box;
-  overflow: hidden;
   transition: border-color 0.1s;
 }
 
 .slot:hover {
   border-color: #4a90d9;
-  z-index: 2;
+  z-index: 10;
+}
+
+/* Wrapper that clips the oversized tile image to the slot boundaries.
+   Kept separate from .slot so that overlay controls (placement buttons)
+   can extend beyond the slot without being clipped. */
+.imageClip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
 .slot[draggable='true'] {

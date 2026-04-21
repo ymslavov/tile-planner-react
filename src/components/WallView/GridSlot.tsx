@@ -185,12 +185,13 @@ export function GridSlot({
     cascadePreview != null &&
     cascadePreview.affectedPieceIds.includes(placement.pieceId);
 
-  let className = styles.slot;
+  let className = `${styles.slot} wall-slot`;
   if (slot.isPartialW || slot.isPartialH) className += ` ${styles.partial}`;
   if (isHidden) className += ` ${styles.hidden}`;
   if (isNicheCut) className += ` ${styles.nicheCut}`;
   if (!placement && !isHidden) className += ` ${styles.empty}`;
   if (isPulseTarget) className += ' pulseHighlight';
+  if (placement) className += ' wall-slot-placed';
 
   return (
     <div
@@ -210,18 +211,20 @@ export function GridSlot({
     >
       {!isHidden && placement && piece && (
         <>
-          <TileImage
-            piece={piece}
-            placement={placement}
-            slotW={slot.w}
-            slotH={slot.h}
-            scale={scale}
-            orientation={orientation}
-            draftOffsetX={isDragging ? draftOffsetX : undefined}
-            draftOffsetY={isDragging ? draftOffsetY : undefined}
-            onMouseDown={handleImageMouseDown}
-          />
-          <span className={styles.label}>{piece.sourceTileId}</span>
+          <div className={styles.imageClip}>
+            <TileImage
+              piece={piece}
+              placement={placement}
+              slotW={slot.w}
+              slotH={slot.h}
+              scale={scale}
+              orientation={orientation}
+              draftOffsetX={isDragging ? draftOffsetX : undefined}
+              draftOffsetY={isDragging ? draftOffsetY : undefined}
+              onMouseDown={handleImageMouseDown}
+            />
+            <span className={styles.label}>{piece.sourceTileId}</span>
+          </div>
           <PlacementControls
             wallId={wallId}
             slotKey={slotKey}

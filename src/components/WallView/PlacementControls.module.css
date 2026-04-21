@@ -1,57 +1,67 @@
+/* Positioned so the button bar "floats" near the top-right of the slot.
+   The button bar can extend outside the slot for very thin slots — the
+   parent slot no longer has overflow:hidden (that clipping moved to .imageClip). */
 .controls {
   position: absolute;
-  inset: 0;
-  z-index: 5;
+  top: 0;
+  right: 0;
+  z-index: 20;
   pointer-events: none;
 }
 
-.rotateBtn {
+/* Button bar — hidden by default, revealed on slot hover.
+   Anchored to the top-right corner; extends further right/up for thin slots. */
+.btnBar {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 1px solid #999;
-  background: rgba(255, 255, 255, 0.85);
-  font-size: 12px;
-  cursor: pointer;
+  top: -2px;
+  right: -2px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
   pointer-events: auto;
+  white-space: nowrap;
+}
+
+/* Hover detection: parent .wall-slot-placed gets :hover (global class added
+   by GridSlot). Self-hover on the controls keeps the bar open when the user
+   hovers over the buttons themselves (prevents flicker). */
+.controls:hover .btnBar,
+:global(.wall-slot-placed:hover) .btnBar {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.98);
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
   padding: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: background 0.1s, transform 0.1s;
 }
 
-.rotateBtn:hover {
-  background: #e0e0e0;
+.btn:hover {
+  background: #f3f4f6;
+  transform: scale(1.1);
 }
 
-.anchorDot {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  background: rgba(100, 116, 139, 0.9);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  pointer-events: auto;
-  transition: transform 0.1s, background 0.1s;
+.removeBtn {
+  color: #dc2626;
+  font-size: 12px;
 }
 
-.anchorDot:hover {
-  background: rgba(59, 130, 246, 0.9);
-  transform: scale(1.15);
-}
-
-.anchorActive {
-  background: #2563eb;
-  border-color: #fff;
-  box-shadow: 0 0 0 2px #2563eb, 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.anchorActive:hover {
-  background: #2563eb;
+.removeBtn:hover {
+  background: #fee2e2;
+  color: #991b1b;
 }
