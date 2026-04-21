@@ -31,6 +31,13 @@ export function computeSizes(
     return sizes;
   }
 
+  // Wall is smaller than a single tile — the entire wall is one partial slot.
+  // No grout is needed (nothing to gap against). Split mode doesn't make
+  // sense here because there are no full tiles to center.
+  if (fullCount === 0) {
+    return [wallDim];
+  }
+
   const partialSize = remainder - grout;
 
   if (mode === 'right' || mode === 'bottom') {
@@ -46,7 +53,7 @@ export function computeSizes(
     return sizes;
   }
 
-  // 'split' mode
+  // 'split' mode (only reached when fullCount >= 1)
   const splitTotal = wallDim - fullCount * tileDim - (fullCount + 1) * grout;
   if (splitTotal < 0.01) {
     const sizes: number[] = [];
