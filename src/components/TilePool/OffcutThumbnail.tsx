@@ -5,10 +5,13 @@ import styles from './OffcutThumbnail.module.css';
 interface OffcutThumbnailProps {
   piece: Piece;
   orientation: Orientation;
-  maxHeight: number;
+  /**
+   * Scale in px per cm. Offcut thumbnail renders at piece.width * scale × piece.height * scale.
+   * This is the scale of the parent tile — so an offcut proportionally smaller than its
+   * parent tile renders proportionally smaller here too.
+   */
+  scale: number;
 }
-
-const MAX_THUMB_WIDTH = 80;
 
 /**
  * Renders the marble texture cropped to the offcut's imageRegion
@@ -17,16 +20,11 @@ const MAX_THUMB_WIDTH = 80;
 export function OffcutThumbnail({
   piece,
   orientation,
-  maxHeight,
+  scale,
 }: OffcutThumbnailProps) {
   const ir = piece.imageRegion;
   const tileId = piece.sourceTileId;
 
-  // Scale to fit within constraints
-  let scale = maxHeight / piece.height;
-  if (piece.width * scale > MAX_THUMB_WIDTH) {
-    scale = MAX_THUMB_WIDTH / piece.width;
-  }
   const thumbW = piece.width * scale;
   const thumbH = piece.height * scale;
 

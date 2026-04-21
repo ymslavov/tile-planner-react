@@ -12,10 +12,9 @@ interface OffcutRowProps {
   walls: Wall[];
   orientation: Orientation;
   depth: number;
+  /** Scale (px per cm) — same scale as parent tile for proportional sizing */
+  scale: number;
 }
-
-// Drag-image target width for offcut pieces
-const OFFCUT_DRAG_WIDTH = 80;
 
 function OffcutItem({
   piece,
@@ -24,6 +23,7 @@ function OffcutItem({
   orientation,
   pieces,
   depth,
+  scale,
 }: {
   piece: Piece;
   placed: Map<string, { wallId: string; location: string }>;
@@ -31,6 +31,7 @@ function OffcutItem({
   orientation: Orientation;
   pieces: Record<string, Piece>;
   depth: number;
+  scale: number;
 }) {
   const cleanupRef = useRef<(() => void) | null>(null);
   const isPlaced = placed.has(piece.id);
@@ -49,7 +50,9 @@ function OffcutItem({
     );
     e.dataTransfer.effectAllowed = 'move';
 
-    const result = createPieceDragImage(piece, OFFCUT_DRAG_WIDTH);
+    // Drag image at the same scale as the thumbnail for consistency
+    const dragW = Math.max(40, Math.min(200, piece.width * scale));
+    const result = createPieceDragImage(piece, dragW);
     if (result) {
       e.dataTransfer.setDragImage(result.canvas, result.canvas.width / 2, result.canvas.height / 2);
       cleanupRef.current = result.cleanup;
@@ -75,7 +78,7 @@ function OffcutItem({
           <OffcutThumbnail
             piece={piece}
             orientation={orientation}
-            maxHeight={50}
+            scale={scale}
           />
           <span className={styles.badge}>{piece.id}</span>
         </div>
@@ -98,6 +101,7 @@ function OffcutItem({
             walls={walls}
             orientation={orientation}
             depth={depth + 1}
+            scale={scale}
           />
         </div>
       )}
@@ -112,6 +116,7 @@ export function OffcutRow({
   walls,
   orientation,
   depth,
+  scale,
 }: OffcutRowProps) {
   return (
     <div className={styles.offcutList}>
@@ -124,6 +129,7 @@ export function OffcutRow({
           orientation={orientation}
           pieces={pieces}
           depth={depth}
+          scale={scale}
         />
       ))}
     </div>

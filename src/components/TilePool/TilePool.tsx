@@ -4,7 +4,7 @@ import { getPlacedPieceIds, getChildPieces } from '../../services/pieceHelpers';
 import { PoolTile } from './PoolTile';
 import { OffcutRow } from './OffcutRow';
 import { SidebarResizer } from './SidebarResizer';
-import { TILE_COUNT } from '../../constants';
+import { TILE_COUNT, TILE_W, TILE_H } from '../../constants';
 import styles from './TilePool.module.css';
 import type { DragData } from '../../store/types';
 
@@ -29,6 +29,11 @@ export function TilePool() {
   // Compute proportional thumbnail width from sidebar width
   const availableW = sidebarWidth - POOL_PADDING;
   const thumbW = Math.max(36, Math.floor((availableW - TILE_GAP) / 2));
+  // Scale in px per cm: same for parent tiles and their offcuts so offcuts render
+  // at their true proportional size relative to the parent (e.g. a 45×120 offcut
+  // appears 75% as wide as its 60×120 parent tile).
+  const parentScale =
+    orientation === 'portrait' ? thumbW / TILE_W : thumbW / TILE_H;
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -98,6 +103,7 @@ export function TilePool() {
               walls={walls}
               orientation={orientation}
               depth={1}
+              scale={parentScale}
             />
           </div>
         )}
