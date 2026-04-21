@@ -1,4 +1,5 @@
 import type { NicheRect, Wall, Piece } from '../../store/types';
+import { tileImageUrl } from '../../constants';
 
 interface NicheOverlayProps {
   nicheRect: NicheRect;
@@ -80,7 +81,7 @@ function NicheBackImage({ piece, rotation, nicheW, nicheH, scale }: NicheBackIma
 
   return (
     <img
-      src={`/tiles/${piece.sourceTileId}.jpg`}
+      src={tileImageUrl(piece.sourceTileId)}
       alt={`Niche back ${piece.id}`}
       style={{
         position: 'absolute',

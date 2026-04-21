@@ -1,6 +1,7 @@
 import type { Piece, Wall } from '../../store/types';
 import { getChildPieces, getPiecePlacement, getTileW, getTileH } from '../../services/pieceHelpers';
 import type { Orientation } from '../../store/types';
+import { tileImageUrl } from '../../constants';
 import styles from './CutSheet.module.css';
 
 interface CutTileSectionProps {
@@ -30,7 +31,7 @@ export function CutTileSection({
       <div className={styles.visual}>
         <div className={styles.imgContainer}>
           <img
-            src={`/tiles/${tileNumber}.jpg`}
+            src={tileImageUrl(tileNumber)}
             className={styles.tileImg}
             alt={`Tile ${tileNumber}`}
           />

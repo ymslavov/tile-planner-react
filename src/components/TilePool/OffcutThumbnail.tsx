@@ -1,5 +1,5 @@
 import type { Piece, Orientation } from '../../store/types';
-import { TILE_W, TILE_H } from '../../constants';
+import { TILE_W, TILE_H, tileImageUrl } from '../../constants';
 import styles from './OffcutThumbnail.module.css';
 
 interface OffcutThumbnailProps {
@@ -45,7 +45,7 @@ export function OffcutThumbnail({
       >
         <div className={styles.imageWrap} style={{ clipPath }}>
           <img
-            src={`/tiles/${tileId}.jpg`}
+            src={tileImageUrl(tileId)}
             alt={`Offcut ${piece.id}`}
             className={styles.img}
             style={{
@@ -78,7 +78,7 @@ export function OffcutThumbnail({
     >
       <div className={styles.imageWrap} style={{ clipPath }}>
         <img
-          src={`/tiles/${tileId}.jpg`}
+          src={tileImageUrl(tileId)}
           alt={`Offcut ${piece.id}`}
           className={styles.img}
           style={{

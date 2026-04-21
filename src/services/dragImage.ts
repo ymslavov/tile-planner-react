@@ -1,5 +1,5 @@
 import type { Piece } from '../store/types';
-import { TILE_W, TILE_H } from '../constants';
+import { TILE_W, TILE_H, tileImageUrl } from '../constants';
 
 // Module-level cache: sourceTileId → HTMLImageElement
 const imageCache = new Map<number, HTMLImageElement>();
@@ -39,7 +39,7 @@ function loadImage(src: string, tileId: number): Promise<HTMLImageElement> {
  */
 export function preloadTileImage(tileId: number): void {
   if (imageCache.has(tileId) || imageLoading.has(tileId)) return;
-  loadImage(`/tiles/${tileId}.jpg`, tileId).catch(() => {
+  loadImage(tileImageUrl(tileId), tileId).catch(() => {
     // Ignore errors during preload — setDragImage will just skip
   });
 }

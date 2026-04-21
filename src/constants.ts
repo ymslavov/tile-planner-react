@@ -6,6 +6,15 @@ export const TILE_H = 120; // portrait height in cm
 export const GROUT = 0.2;  // 2mm in cm
 export const STORAGE_KEY = 'tile-planner-state';
 
+/**
+ * Build the URL for a tile image. Respects Vite's `base` config so the app
+ * works both at site root (local dev) and under `/tile-planner-react/` (GH Pages).
+ */
+export function tileImageUrl(tileId: number | string): string {
+  const base = import.meta.env.BASE_URL; // '/' in dev, '/tile-planner-react/' on Pages
+  return `${base}tiles/${tileId}.jpg`;
+}
+
 export const DEFAULT_WALLS: Wall[] = [
   {
     id: 'wall-1',

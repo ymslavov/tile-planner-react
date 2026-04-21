@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Orientation } from '../../store/types';
 import { preloadTileImage, createPieceDragImage } from '../../services/dragImage';
+import { tileImageUrl } from '../../constants';
 import styles from './PoolTile.module.css';
 
 interface PoolTileProps {
@@ -78,7 +79,7 @@ export function PoolTile({
       onDragEnd={handleDragEnd}
     >
       <img
-        src={`/tiles/${tileNumber}.jpg`}
+        src={tileImageUrl(tileNumber)}
         alt={`Tile ${tileNumber}`}
         className={styles.img}
         onError={(e) => {

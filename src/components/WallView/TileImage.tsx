@@ -1,4 +1,5 @@
 import type { Piece, Placement, Orientation } from '../../store/types';
+import { tileImageUrl } from '../../constants';
 
 interface TileImageProps {
   piece: Piece;
@@ -50,7 +51,7 @@ export function TileImage({
 
     return (
       <img
-        src={`/tiles/${tileId}.jpg`}
+        src={tileImageUrl(tileId)}
         alt={`Tile ${tileId}`}
         style={{
           position: 'absolute',
@@ -82,7 +83,7 @@ export function TileImage({
 
     return (
       <img
-        src={`/tiles/${tileId}.jpg`}
+        src={tileImageUrl(tileId)}
         alt={`Tile ${tileId}`}
         style={{
           position: 'absolute',

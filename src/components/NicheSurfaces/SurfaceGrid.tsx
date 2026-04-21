@@ -12,6 +12,7 @@ import { useStore } from '../../store';
 import { preloadTileImage, createPieceDragImage } from '../../services/dragImage';
 import { getEffectiveDims } from '../../services/pieceHelpers';
 import { findValidOffset } from '../../services/offcutEngine';
+import { tileImageUrl } from '../../constants';
 import styles from './NicheSurfaces.module.css';
 
 interface SurfaceGridProps {
@@ -240,7 +241,7 @@ function SlotCell({
             }}
           >
             <img
-              src={`/tiles/${tileId}.jpg`}
+              src={tileImageUrl(tileId)}
               alt={`Tile ${tileId}`}
               onMouseDown={handleImageMouseDown}
               draggable={false}
