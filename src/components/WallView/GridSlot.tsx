@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import type {
   GridSlot as GridSlotType,
   Placement,
@@ -11,6 +11,7 @@ import { PlacementControls } from './PlacementControls';
 import styles from './GridSlot.module.css';
 import { useStore } from '../../store';
 import { getEffectiveDims } from '../../services/pieceHelpers';
+import { preloadTileImage, createPieceDragImage } from '../../services/dragImage';
 
 interface GridSlotProps {
   slot: GridSlotType;
@@ -39,6 +40,12 @@ export function GridSlot({
   const cascadePreview = useStore((s) => s.cascadePreview);
 
   const slotKey = `${slot.row},${slot.col}`;
+  const dragCleanupRef = useRef<(() => void) | null>(null);
+
+  // Preload tile image for drag previews whenever piece changes
+  useEffect(() => {
+    if (piece) preloadTileImage(piece.sourceTileId);
+  }, [piece]);
 
   // ── In-slot drag state ──────────────────────────────────────────────
   const [isDragging, setIsDragging] = useState(false);
@@ -123,6 +130,13 @@ export function GridSlot({
   draftOffsetYRef.current = draftOffsetY;
 
   // ── HTML5 drag (between slots) ──────────────────────────────────────
+  const handleDragEnd = () => {
+    if (dragCleanupRef.current) {
+      dragCleanupRef.current();
+      dragCleanupRef.current = null;
+    }
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
     if (isHidden) return;
     e.preventDefault();
@@ -154,6 +168,15 @@ export function GridSlot({
       JSON.stringify({ source: 'wall', key: slotKey })
     );
     e.dataTransfer.effectAllowed = 'move';
+
+    if (piece) {
+      const dragW = Math.round(slot.w * scale);
+      const result = createPieceDragImage(piece, Math.max(40, dragW));
+      if (result) {
+        e.dataTransfer.setDragImage(result.canvas, result.canvas.width / 2, result.canvas.height / 2);
+        dragCleanupRef.current = result.cleanup;
+      }
+    }
   };
 
   // ── Pulse highlight ─────────────────────────────────────────────────
@@ -183,6 +206,7 @@ export function GridSlot({
       onDrop={handleDrop}
       draggable={!!placement && !isDragging}
       onDragStart={placement ? handleDragStart : undefined}
+      onDragEnd={handleDragEnd}
     >
       {!isHidden && placement && piece && (
         <>
