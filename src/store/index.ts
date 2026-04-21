@@ -6,6 +6,7 @@ import type {
   Wall,
   NicheSurfaceKey,
   Niche,
+  CascadePreview,
 } from './types';
 import { DEFAULT_WALLS } from '../constants';
 import { initPieces } from '../services/pieceHelpers';
@@ -22,7 +23,11 @@ import {
   importJSON,
 } from '../services/persistence';
 import { computeWrapAroundNicheTiles } from '../services/wrapAroundNiche';
-import { getEffectiveDims } from '../services/pieceHelpers';
+import {
+  getEffectiveDims,
+  getAllDescendants,
+  getPiecePlacement,
+} from '../services/pieceHelpers';
 
 interface TilePlannerActions {
   // Initialization
@@ -68,6 +73,15 @@ interface TilePlannerActions {
   showToast: (message: string) => void;
   removeToast: (id: string) => void;
 
+  // Cascade Preview
+  showCascadePreview: (
+    affectedPieceIds: string[],
+    affectedDescendants: CascadePreview['affectedDescendants'],
+    onConfirm: () => void,
+    onCancel: () => void,
+  ) => void;
+  hideCascadePreview: () => void;
+
   // Internal
   _save: () => void;
   _applyWrapAround: () => void;
@@ -82,6 +96,7 @@ const defaultState: TilePlannerState = {
   pieces: initPieces('portrait'),
   walls: JSON.parse(JSON.stringify(DEFAULT_WALLS)),
   toasts: [],
+  cascadePreview: null,
 };
 
 export const useStore = create<Store>((set, get) => ({
@@ -477,48 +492,74 @@ export const useStore = create<Store>((set, get) => ({
     }
     if (nextRotation === currentRotation) return;
 
-    let newPieces = { ...state.pieces };
-    let newWalls = [...state.walls];
+    // Check for placed descendants
+    const descendants = getAllDescendants(state.pieces, placement.pieceId);
+    const placedDescendants = descendants
+      .map((id) => {
+        const loc = getPiecePlacement(state.walls, id);
+        if (!loc) return null;
+        return {
+          pieceId: id,
+          wallName: loc.wall.name,
+          slotKey: loc.key,
+          surface: loc.surface,
+        };
+      })
+      .filter(Boolean) as CascadePreview['affectedDescendants'];
 
-    // Cascade-delete children
-    const result = cascadeDelete(newPieces, newWalls, placement.pieceId);
-    newPieces = result.pieces;
-    newWalls = result.walls;
-    for (const r of result.removedPlacements) {
-      const surfaceLabel = r.surface ? ` (niche ${r.surface})` : '';
-      get().showToast(`Piece ${r.pieceId} removed from ${r.wallName}${surfaceLabel}`);
-    }
+    const applyRotate = () => {
+      const s = get();
+      let newPieces = { ...s.pieces };
+      let newWalls = [...s.walls];
 
-    // Update rotation
-    const wIdx = newWalls.findIndex((w) => w.id === wallId);
-    newWalls[wIdx] = {
-      ...newWalls[wIdx],
-      tiles: {
-        ...newWalls[wIdx].tiles,
-        [slotKey]: {
-          pieceId: placement.pieceId,
-          rotation: nextRotation,
-          offsetX: placement.offsetX ?? 0,
-          offsetY: placement.offsetY ?? 0,
+      const result = cascadeDelete(newPieces, newWalls, placement.pieceId);
+      newPieces = result.pieces;
+      newWalls = result.walls;
+      for (const r of result.removedPlacements) {
+        const surfaceLabel = r.surface ? ` (niche ${r.surface})` : '';
+        get().showToast(`Piece ${r.pieceId} removed from ${r.wallName}${surfaceLabel}`);
+      }
+
+      const wIdx = newWalls.findIndex((w) => w.id === wallId);
+      newWalls[wIdx] = {
+        ...newWalls[wIdx],
+        tiles: {
+          ...newWalls[wIdx].tiles,
+          [slotKey]: {
+            pieceId: placement.pieceId,
+            rotation: nextRotation,
+            offsetX: placement.offsetX ?? 0,
+            offsetY: placement.offsetY ?? 0,
+          },
         },
-      },
+      };
+
+      const offcutResult = createOffcuts(
+        newPieces,
+        placement.pieceId,
+        slot.w,
+        slot.h,
+        nextRotation,
+        placement.offsetX ?? 0,
+        placement.offsetY ?? 0,
+      );
+      newPieces = offcutResult.pieces;
+
+      set({ pieces: newPieces, walls: newWalls, cascadePreview: null });
+      get()._applyWrapAround();
+      get()._save();
     };
 
-    // Create new offcuts
-    const offcutResult = createOffcuts(
-      newPieces,
-      placement.pieceId,
-      slot.w,
-      slot.h,
-      nextRotation,
-      placement.offsetX ?? 0,
-      placement.offsetY ?? 0,
-    );
-    newPieces = offcutResult.pieces;
-
-    set({ pieces: newPieces, walls: newWalls });
-    get()._applyWrapAround();
-    get()._save();
+    if (placedDescendants.length > 0) {
+      get().showCascadePreview(
+        placedDescendants.map((d) => d.pieceId),
+        placedDescendants,
+        applyRotate,
+        () => get().hideCascadePreview(),
+      );
+    } else {
+      applyRotate();
+    }
   },
 
   setOffsets: (wallId, slotKey, offsetX, offsetY) => {
@@ -543,48 +584,79 @@ export const useStore = create<Store>((set, get) => ({
     const clampedX = Math.min(0, Math.max(slot.w - eff.w, offsetX));
     const clampedY = Math.min(0, Math.max(slot.h - eff.h, offsetY));
 
-    let newPieces = { ...state.pieces };
-    let newWalls = [...state.walls];
+    // Skip if offsets haven't changed
+    const prevX = placement.offsetX ?? 0;
+    const prevY = placement.offsetY ?? 0;
+    if (Math.abs(clampedX - prevX) < 0.001 && Math.abs(clampedY - prevY) < 0.001) return;
 
-    // Cascade-delete children
-    const result = cascadeDelete(newPieces, newWalls, placement.pieceId);
-    newPieces = result.pieces;
-    newWalls = result.walls;
-    for (const r of result.removedPlacements) {
-      const surfaceLabel = r.surface ? ` (niche ${r.surface})` : '';
-      get().showToast(`Piece ${r.pieceId} removed from ${r.wallName}${surfaceLabel}`);
-    }
+    // Check for placed descendants
+    const descendants = getAllDescendants(state.pieces, placement.pieceId);
+    const placedDescendants = descendants
+      .map((id) => {
+        const loc = getPiecePlacement(state.walls, id);
+        if (!loc) return null;
+        return {
+          pieceId: id,
+          wallName: loc.wall.name,
+          slotKey: loc.key,
+          surface: loc.surface,
+        };
+      })
+      .filter(Boolean) as CascadePreview['affectedDescendants'];
 
-    // Update offsets
-    const wIdx = newWalls.findIndex((w) => w.id === wallId);
-    newWalls[wIdx] = {
-      ...newWalls[wIdx],
-      tiles: {
-        ...newWalls[wIdx].tiles,
-        [slotKey]: {
-          pieceId: placement.pieceId,
-          rotation: placement.rotation || 0,
-          offsetX: clampedX,
-          offsetY: clampedY,
+    const applyOffsets = () => {
+      const s = get();
+      let newPieces = { ...s.pieces };
+      let newWalls = [...s.walls];
+
+      const result = cascadeDelete(newPieces, newWalls, placement.pieceId);
+      newPieces = result.pieces;
+      newWalls = result.walls;
+      for (const r of result.removedPlacements) {
+        const surfaceLabel = r.surface ? ` (niche ${r.surface})` : '';
+        get().showToast(`Piece ${r.pieceId} removed from ${r.wallName}${surfaceLabel}`);
+      }
+
+      const wIdx = newWalls.findIndex((w) => w.id === wallId);
+      newWalls[wIdx] = {
+        ...newWalls[wIdx],
+        tiles: {
+          ...newWalls[wIdx].tiles,
+          [slotKey]: {
+            pieceId: placement.pieceId,
+            rotation: placement.rotation || 0,
+            offsetX: clampedX,
+            offsetY: clampedY,
+          },
         },
-      },
+      };
+
+      const offcutResult = createOffcuts(
+        newPieces,
+        placement.pieceId,
+        slot.w,
+        slot.h,
+        placement.rotation || 0,
+        clampedX,
+        clampedY,
+      );
+      newPieces = offcutResult.pieces;
+
+      set({ pieces: newPieces, walls: newWalls, cascadePreview: null });
+      get()._applyWrapAround();
+      get()._save();
     };
 
-    // Create new offcuts
-    const offcutResult = createOffcuts(
-      newPieces,
-      placement.pieceId,
-      slot.w,
-      slot.h,
-      placement.rotation || 0,
-      clampedX,
-      clampedY,
-    );
-    newPieces = offcutResult.pieces;
-
-    set({ pieces: newPieces, walls: newWalls });
-    get()._applyWrapAround();
-    get()._save();
+    if (placedDescendants.length > 0) {
+      get().showCascadePreview(
+        placedDescendants.map((d) => d.pieceId),
+        placedDescendants,
+        applyOffsets,
+        () => get().hideCascadePreview(),
+      );
+    } else {
+      applyOffsets();
+    }
   },
 
   placeNicheTile: (wallId, surfaceKey, slotKey, pieceId) => {
@@ -721,6 +793,16 @@ export const useStore = create<Store>((set, get) => ({
     set((state) => ({
       toasts: state.toasts.filter((t) => t.id !== id),
     }));
+  },
+
+  showCascadePreview: (affectedPieceIds, affectedDescendants, onConfirm, onCancel) => {
+    set({
+      cascadePreview: { affectedPieceIds, affectedDescendants, onConfirm, onCancel },
+    });
+  },
+
+  hideCascadePreview: () => {
+    set({ cascadePreview: null });
   },
 
   _save: () => {

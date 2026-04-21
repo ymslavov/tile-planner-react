@@ -32,6 +32,7 @@ export function SurfaceGrid({
 }: SurfaceGridProps) {
   const placeNicheTile = useStore((s) => s.placeNicheTile);
   const swapNicheTiles = useStore((s) => s.swapNicheTiles);
+  const cascadePreview = useStore((s) => s.cascadePreview);
 
   const virtualWall = {
     width: surfaceW,
@@ -93,6 +94,10 @@ export function SurfaceGrid({
         const tileId = piece ? piece.sourceTileId : null;
         const ir = piece?.imageRegion || { x: 0, y: 0, w: grid.tw, h: grid.th };
         const rot = placement?.rotation || 0;
+        const isPulseTarget =
+          placement !== undefined &&
+          cascadePreview != null &&
+          cascadePreview.affectedPieceIds.includes(placement.pieceId);
 
         let rotCss: React.CSSProperties = {};
         if (rot !== 0 && piece) {
@@ -107,7 +112,7 @@ export function SurfaceGrid({
         return (
           <div
             key={key}
-            className={`${styles.slotEl} ${slot.isPartialW || slot.isPartialH ? styles.partial : ''}`}
+            className={`${styles.slotEl} ${slot.isPartialW || slot.isPartialH ? styles.partial : ''} ${isPulseTarget ? 'pulseHighlight' : ''}`}
             style={{
               position: 'absolute',
               left: `${slot.x * surfaceScale}px`,

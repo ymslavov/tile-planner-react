@@ -6,6 +6,7 @@ import { WallView } from './components/WallView/WallView';
 import { SettingsPanel } from './components/Settings/SettingsPanel';
 import { CutSheet } from './components/CutSheet/CutSheet';
 import { ToastContainer } from './components/Toast/ToastContainer';
+import { CascadeModal } from './components/CascadeModal/CascadeModal';
 import './styles/index.css';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
       </div>
       <CutSheet />
       <ToastContainer />
+      <CascadeModal />
     </>
   );
 }

@@ -113,6 +113,22 @@ export interface NicheOverlapResult {
   nicheRect: NicheRect | null;
 }
 
+// ── Cascade Preview Types ────────────────────────────────────────────────
+
+export interface AffectedDescendant {
+  pieceId: string;
+  wallName: string;
+  slotKey: string;
+  surface: string | null;
+}
+
+export interface CascadePreview {
+  affectedPieceIds: string[];
+  affectedDescendants: AffectedDescendant[];
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
 // ── Store Types ─────────────────────────────────────────────────────────
 
 export interface TilePlannerState {
@@ -122,6 +138,8 @@ export interface TilePlannerState {
   pieces: Record<string, Piece>;
   walls: Wall[];
   toasts: Toast[];
+  /** Runtime-only. Not persisted to localStorage. */
+  cascadePreview?: CascadePreview | null;
 }
 
 export interface Toast {
