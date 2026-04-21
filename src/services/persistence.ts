@@ -7,6 +7,8 @@ interface OldPlacement {
   pieceId?: string;
   rotation?: number;
   anchor?: string;
+  offsetX?: number;
+  offsetY?: number;
 }
 
 /**
@@ -31,34 +33,47 @@ export function migrateState(s: TilePlannerState): void {
   }
 
   for (const wall of s.walls) {
-    const newTiles: Record<string, { pieceId: string; rotation: number; anchor: string }> = {};
+    const newTiles: Record<string, { pieceId: string; rotation: number; offsetX: number; offsetY: number }> = {};
     for (const [key, placement] of Object.entries(wall.tiles)) {
       const pl = placement as unknown as OldPlacement;
       if (pl.tileId !== undefined) {
         newTiles[key] = {
           pieceId: String(pl.tileId),
           rotation: 0,
-          anchor: 'top-left',
+          offsetX: 0,
+          offsetY: 0,
         };
       } else {
-        newTiles[key] = placement as unknown as { pieceId: string; rotation: number; anchor: string };
+        // Migrate anchor-based placements to offset (0,0)
+        newTiles[key] = {
+          pieceId: pl.pieceId!,
+          rotation: pl.rotation ?? 0,
+          offsetX: pl.offsetX ?? 0,
+          offsetY: pl.offsetY ?? 0,
+        };
       }
     }
     wall.tiles = newTiles as Wall['tiles'];
 
     if (wall.nicheTiles) {
       for (const [surface, tiles] of Object.entries(wall.nicheTiles)) {
-        const newSurface: Record<string, { pieceId: string; rotation: number; anchor: string }> = {};
+        const newSurface: Record<string, { pieceId: string; rotation: number; offsetX: number; offsetY: number }> = {};
         for (const [key, placement] of Object.entries(tiles)) {
           const pl = placement as unknown as OldPlacement;
           if (pl.tileId !== undefined) {
             newSurface[key] = {
               pieceId: String(pl.tileId),
               rotation: 0,
-              anchor: 'top-left',
+              offsetX: 0,
+              offsetY: 0,
             };
           } else {
-            newSurface[key] = placement as unknown as { pieceId: string; rotation: number; anchor: string };
+            newSurface[key] = {
+              pieceId: pl.pieceId!,
+              rotation: pl.rotation ?? 0,
+              offsetX: pl.offsetX ?? 0,
+              offsetY: pl.offsetY ?? 0,
+            };
           }
         }
         (wall.nicheTiles as Record<string, typeof newSurface>)[surface] = newSurface;

@@ -44,7 +44,8 @@ export interface Niche {
 export interface Placement {
   pieceId: string;
   rotation: number;
-  anchor: AnchorPosition;
+  offsetX: number;  // cm offset of piece's top-left from slot's top-left. Range: [slotW - pieceEffW, 0]
+  offsetY: number;  // cm offset of piece's top-left from slot's top-left. Range: [slotH - pieceEffH, 0]
   autoWrap?: boolean;
 }
 

@@ -5,6 +5,7 @@ import type {
   RemovedPlacement,
   GridSlot,
 } from '../store/types';
+// AnchorPosition kept for backward-compat export; no longer used in Placement.
 import {
   getEffectiveDims,
   getAllDescendants,
@@ -70,8 +71,21 @@ export function computeOffcutImageRegion(
 }
 
 /**
- * Create offcut pieces when a piece is placed in a slot.
- * Returns the created offcuts and the mutated pieces record.
+ * Create offcut pieces when a piece is placed in a slot using continuous offsets.
+ *
+ * offsetX / offsetY: cm offset of piece's top-left from slot's top-left.
+ *   - offsetX is in [slotW - effW, 0]  (negative means piece extends left of slot)
+ *   - offsetY is in [slotH - effH, 0]
+ *
+ * In piece-local coordinates (piece top-left = (0,0)):
+ *   Slot occupies [−offsetX, −offsetX + slotW] × [−offsetY, −offsetY + slotH]
+ *
+ * We build a 3×3 grid using cut lines at:
+ *   xCuts = sort+dedup([0, −offsetX, −offsetX + slotW, effW])
+ *   yCuts = sort+dedup([0, −offsetY, −offsetY + slotH, effH])
+ *
+ * Cell (1,1) (the middle of the 3×3) is the slot-covering region — skipped.
+ * All other non-zero-area cells become offcut pieces (up to 8).
  */
 export function createOffcuts(
   pieces: Record<string, Piece>,
@@ -79,154 +93,58 @@ export function createOffcuts(
   slotW: number,
   slotH: number,
   rotation: number,
-  anchor: AnchorPosition
+  offsetX: number,
+  offsetY: number,
 ): { offcuts: Piece[]; pieces: Record<string, Piece> } {
   const piece = pieces[pieceId];
   if (!piece) return { offcuts: [], pieces };
 
   const eff = getEffectiveDims(piece, rotation);
-  const overW = eff.w - slotW;
-  const overH = eff.h - slotH;
 
-  if (overW <= 0 && overH <= 0) return { offcuts: [], pieces };
+  // Build sorted, deduped cut lines in piece-local coordinates
+  const rawXCuts = [0, -offsetX, -offsetX + slotW, eff.w];
+  const rawYCuts = [0, -offsetY, -offsetY + slotH, eff.h];
+
+  const xCuts = [...new Set(rawXCuts.map((v) => Math.min(Math.max(v, 0), eff.w)))].sort((a, b) => a - b);
+  const yCuts = [...new Set(rawYCuts.map((v) => Math.min(Math.max(v, 0), eff.h)))].sort((a, b) => a - b);
+
+  // Find the indices of the slot boundary columns/rows
+  // slot starts at -offsetX in piece coords (clamped to [0, effW])
+  const slotStartX = Math.min(Math.max(-offsetX, 0), eff.w);
+  const slotStartY = Math.min(Math.max(-offsetY, 0), eff.h);
+
+  const slotColStart = xCuts.indexOf(slotStartX);
+  const slotRowStart = yCuts.indexOf(slotStartY);
 
   const newPieces = { ...pieces };
-
-  // Determine offcut origins in the parent's rotated space based on anchor
-  let sideOx: number, sideOy: number;
-  let topOx: number, topOy: number;
-
-  if (anchor === 'top-left') {
-    sideOx = slotW;
-    sideOy = 0;
-    topOx = 0;
-    topOy = slotH;
-  } else if (anchor === 'top-right') {
-    sideOx = 0;
-    sideOy = 0;
-    topOx = 0;
-    topOy = slotH;
-  } else if (anchor === 'bottom-left') {
-    sideOx = slotW;
-    sideOy = 0;
-    topOx = 0;
-    topOy = 0;
-  } else {
-    // bottom-right
-    sideOx = 0;
-    sideOy = 0;
-    topOx = 0;
-    topOy = 0;
-  }
-
   const offcuts: Piece[] = [];
   let offcutIndex = 0;
 
-  if (overW > 0 && overH > 0) {
-    // Both overhangs: 3 offcuts
-    const sideId = generateOffcutId(pieceId, offcutIndex++);
-    const sidePiece: Piece = {
-      id: sideId,
-      sourceTileId: piece.sourceTileId,
-      parentId: pieceId,
-      width: overW,
-      height: eff.h,
-      geometry: { boundingBox: { w: overW, h: eff.h }, cutouts: [] },
-      imageRegion: computeOffcutImageRegion(
-        piece,
-        rotation,
-        sideOx,
-        sideOy,
-        overW,
-        eff.h
-      ),
-    };
-    newPieces[sideId] = sidePiece;
-    offcuts.push(sidePiece);
+  for (let row = 0; row < yCuts.length - 1; row++) {
+    for (let col = 0; col < xCuts.length - 1; col++) {
+      // Skip the slot-covering cell
+      if (col === slotColStart && row === slotRowStart) continue;
 
-    const bottomId = generateOffcutId(pieceId, offcutIndex++);
-    const bottomPiece: Piece = {
-      id: bottomId,
-      sourceTileId: piece.sourceTileId,
-      parentId: pieceId,
-      width: slotW,
-      height: overH,
-      geometry: { boundingBox: { w: slotW, h: overH }, cutouts: [] },
-      imageRegion: computeOffcutImageRegion(
-        piece,
-        rotation,
-        topOx,
-        topOy,
-        slotW,
-        overH
-      ),
-    };
-    newPieces[bottomId] = bottomPiece;
-    offcuts.push(bottomPiece);
+      const ox = xCuts[col];
+      const oy = yCuts[row];
+      const ow = xCuts[col + 1] - ox;
+      const oh = yCuts[row + 1] - oy;
 
-    const cornerId = generateOffcutId(pieceId, offcutIndex++);
-    const cornerOx =
-      anchor === 'top-left' || anchor === 'bottom-left' ? slotW : 0;
-    const cornerOy =
-      anchor === 'top-left' || anchor === 'top-right' ? slotH : 0;
-    const cornerPiece: Piece = {
-      id: cornerId,
-      sourceTileId: piece.sourceTileId,
-      parentId: pieceId,
-      width: overW,
-      height: overH,
-      geometry: { boundingBox: { w: overW, h: overH }, cutouts: [] },
-      imageRegion: computeOffcutImageRegion(
-        piece,
-        rotation,
-        cornerOx,
-        cornerOy,
-        overW,
-        overH
-      ),
-    };
-    newPieces[cornerId] = cornerPiece;
-    offcuts.push(cornerPiece);
-  } else if (overW > 0) {
-    const sideId = generateOffcutId(pieceId, offcutIndex++);
-    const sidePiece: Piece = {
-      id: sideId,
-      sourceTileId: piece.sourceTileId,
-      parentId: pieceId,
-      width: overW,
-      height: eff.h,
-      geometry: { boundingBox: { w: overW, h: eff.h }, cutouts: [] },
-      imageRegion: computeOffcutImageRegion(
-        piece,
-        rotation,
-        sideOx,
-        sideOy,
-        overW,
-        eff.h
-      ),
-    };
-    newPieces[sideId] = sidePiece;
-    offcuts.push(sidePiece);
-  } else if (overH > 0) {
-    const topId = generateOffcutId(pieceId, offcutIndex++);
-    const topPiece: Piece = {
-      id: topId,
-      sourceTileId: piece.sourceTileId,
-      parentId: pieceId,
-      width: eff.w,
-      height: overH,
-      geometry: { boundingBox: { w: eff.w, h: overH }, cutouts: [] },
-      imageRegion: computeOffcutImageRegion(
-        piece,
-        rotation,
-        topOx,
-        topOy,
-        eff.w,
-        overH
-      ),
-    };
-    newPieces[topId] = topPiece;
-    offcuts.push(topPiece);
+      if (ow <= 0.01 || oh <= 0.01) continue;
+
+      const offcutId = generateOffcutId(pieceId, offcutIndex++);
+      const offcutPiece: Piece = {
+        id: offcutId,
+        sourceTileId: piece.sourceTileId,
+        parentId: pieceId,
+        width: ow,
+        height: oh,
+        geometry: { boundingBox: { w: ow, h: oh }, cutouts: [] },
+        imageRegion: computeOffcutImageRegion(piece, rotation, ox, oy, ow, oh),
+      };
+      newPieces[offcutId] = offcutPiece;
+      offcuts.push(offcutPiece);
+    }
   }
 
   return { offcuts, pieces: newPieces };
@@ -284,18 +202,13 @@ export function cascadeDelete(
 }
 
 /**
- * Get valid anchor positions based on effective dimensions vs slot.
+ * @deprecated Anchor system replaced by continuous offsetX/offsetY.
+ * Kept for backward-compat; always returns ['top-left'].
  */
 export function getValidAnchors(
-  effectiveDims: { w: number; h: number },
-  slot: GridSlot
+  _effectiveDims: { w: number; h: number },
+  _slot: GridSlot
 ): AnchorPosition[] {
-  const overW = effectiveDims.w - slot.w > 0.01;
-  const overH = effectiveDims.h - slot.h > 0.01;
-  if (overW && overH)
-    return ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-  if (overW) return ['top-left', 'top-right'];
-  if (overH) return ['top-left', 'bottom-left'];
   return ['top-left'];
 }
 

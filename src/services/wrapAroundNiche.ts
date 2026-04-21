@@ -98,7 +98,8 @@ export function computeWrapAroundNicheTiles(
     const makeLipPlacement = (child: Piece | null): Placement => ({
       pieceId: child ? child.id : placement.pieceId,
       rotation: placement.rotation || 0,
-      anchor: placement.anchor || 'top-left',
+      offsetX: 0,
+      offsetY: 0,
       autoWrap: true,
     });
 

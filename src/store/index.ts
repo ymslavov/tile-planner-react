@@ -4,7 +4,6 @@ import type {
   Orientation,
   NicheMode,
   Wall,
-  AnchorPosition,
   NicheSurfaceKey,
   Niche,
 } from './types';
@@ -53,7 +52,7 @@ interface TilePlannerActions {
   unplaceTile: (wallId: string, slotKey: string) => void;
   swapTiles: (wallId: string, fromKey: string, toKey: string) => void;
   rotatePlacement: (wallId: string, slotKey: string) => void;
-  setAnchor: (wallId: string, slotKey: string, anchor: AnchorPosition) => void;
+  setOffsets: (wallId: string, slotKey: string, offsetX: number, offsetY: number) => void;
 
   // Niche surface placement
   placeNicheTile: (wallId: string, surfaceKey: NicheSurfaceKey, slotKey: string, pieceId: string) => void;
@@ -317,12 +316,12 @@ export const useStore = create<Store>((set, get) => ({
       ...newWalls[wIdx],
       tiles: {
         ...newWalls[wIdx].tiles,
-        [slotKey]: { pieceId, rotation: 0, anchor: 'top-left' as AnchorPosition },
+        [slotKey]: { pieceId, rotation: 0, offsetX: 0, offsetY: 0 },
       },
     };
 
     // Create offcuts
-    const offcutResult = createOffcuts(newPieces, pieceId, slot.w, slot.h, 0, 'top-left');
+    const offcutResult = createOffcuts(newPieces, pieceId, slot.w, slot.h, 0, 0, 0);
     newPieces = offcutResult.pieces;
 
     set({ pieces: newPieces, walls: newWalls });
@@ -425,7 +424,8 @@ export const useStore = create<Store>((set, get) => ({
         fromSlot.w,
         fromSlot.h,
         toPlacement.rotation || 0,
-        toPlacement.anchor || 'top-left'
+        toPlacement.offsetX ?? 0,
+        toPlacement.offsetY ?? 0,
       );
       newPieces = r.pieces;
     }
@@ -436,7 +436,8 @@ export const useStore = create<Store>((set, get) => ({
         toSlot.w,
         toSlot.h,
         fromPlacement.rotation || 0,
-        fromPlacement.anchor || 'top-left'
+        fromPlacement.offsetX ?? 0,
+        fromPlacement.offsetY ?? 0,
       );
       newPieces = r.pieces;
     }
@@ -497,7 +498,8 @@ export const useStore = create<Store>((set, get) => ({
         [slotKey]: {
           pieceId: placement.pieceId,
           rotation: nextRotation,
-          anchor: placement.anchor || 'top-left',
+          offsetX: placement.offsetX ?? 0,
+          offsetY: placement.offsetY ?? 0,
         },
       },
     };
@@ -509,7 +511,8 @@ export const useStore = create<Store>((set, get) => ({
       slot.w,
       slot.h,
       nextRotation,
-      placement.anchor || 'top-left'
+      placement.offsetX ?? 0,
+      placement.offsetY ?? 0,
     );
     newPieces = offcutResult.pieces;
 
@@ -518,19 +521,27 @@ export const useStore = create<Store>((set, get) => ({
     get()._save();
   },
 
-  setAnchor: (wallId, slotKey, anchor) => {
+  setOffsets: (wallId, slotKey, offsetX, offsetY) => {
     const state = get();
     const wallIdx = state.walls.findIndex((w) => w.id === wallId);
     if (wallIdx === -1) return;
 
     const wall = state.walls[wallIdx];
     const placement = wall.tiles[slotKey];
-    if (!placement || placement.anchor === anchor) return;
+    if (!placement) return;
+
+    const piece = state.pieces[placement.pieceId];
+    if (!piece) return;
 
     const grid = computeGrid(wall, state.orientation);
     const [row, col] = slotKey.split(',').map(Number);
     const slot = grid.slots.find((s) => s.row === row && s.col === col);
     if (!slot) return;
+
+    const eff = getEffectiveDims(piece, placement.rotation || 0);
+    // Clamp offsets to valid range: [slotW - effW, 0] for X, [slotH - effH, 0] for Y
+    const clampedX = Math.min(0, Math.max(slot.w - eff.w, offsetX));
+    const clampedY = Math.min(0, Math.max(slot.h - eff.h, offsetY));
 
     let newPieces = { ...state.pieces };
     let newWalls = [...state.walls];
@@ -544,7 +555,7 @@ export const useStore = create<Store>((set, get) => ({
       get().showToast(`Piece ${r.pieceId} removed from ${r.wallName}${surfaceLabel}`);
     }
 
-    // Update anchor
+    // Update offsets
     const wIdx = newWalls.findIndex((w) => w.id === wallId);
     newWalls[wIdx] = {
       ...newWalls[wIdx],
@@ -553,7 +564,8 @@ export const useStore = create<Store>((set, get) => ({
         [slotKey]: {
           pieceId: placement.pieceId,
           rotation: placement.rotation || 0,
-          anchor,
+          offsetX: clampedX,
+          offsetY: clampedY,
         },
       },
     };
@@ -565,7 +577,8 @@ export const useStore = create<Store>((set, get) => ({
       slot.w,
       slot.h,
       placement.rotation || 0,
-      anchor
+      clampedX,
+      clampedY,
     );
     newPieces = offcutResult.pieces;
 
@@ -584,7 +597,7 @@ export const useStore = create<Store>((set, get) => ({
           ...w.nicheTiles,
           [surfaceKey]: {
             ...w.nicheTiles[surfaceKey],
-            [slotKey]: { pieceId, rotation: 0, anchor: 'top-left' as AnchorPosition },
+            [slotKey]: { pieceId, rotation: 0, offsetX: 0, offsetY: 0 },
           },
         },
       };

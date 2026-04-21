@@ -111,7 +111,7 @@ export function CutTileSection({
                     <strong>Placed:</strong> {wallName}
                     {pl!.surface ? `, niche ${pl!.surface}` : ''}, {pl!.key}
                     {placement
-                      ? `, anchor: ${placement.anchor}, rotation: ${placement.rotation}\u00B0`
+                      ? `, offset: (${(placement.offsetX ?? 0).toFixed(1)}, ${(placement.offsetY ?? 0).toFixed(1)}), rotation: ${placement.rotation}\u00B0`
                       : ''}
                   </>
                 ) : (
