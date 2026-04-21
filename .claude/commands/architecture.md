@@ -1,371 +1,509 @@
-# Tile Planner React — Architecture & Implementation Guide
+# Tile Planner React — Architecture
 
-## Overview
+Start-here reference for the codebase. Everything else (`offcut-geometry.md`, `ui-interactions.md`, `debugging.md`, `deployment.md`) drills into a specific area.
 
-The tile planner is a **React + TypeScript + Vite** app for planning the layout of 18 marble tiles (60cm × 120cm each) across multiple bathroom walls. It features drag-and-drop tile placement, an offcut tracking system, per-placement rotation and anchor snapping, niche support, and a printable cut sheet.
+## What it is
 
-**Tech stack:** React 19, TypeScript, Vite, Zustand (state management), CSS Modules. No other runtime dependencies.
+A single-page React + TypeScript + Vite app for planning the layout of marble tiles across bathroom walls that may contain niches. Features:
 
-## Project Structure
+- Drag-and-drop tile placement (pool → wall, wall → wall, wall → pool).
+- Per-placement rotation (0/90/180/270) plus continuous `offsetX`/`offsetY` positioning within a slot.
+- Hierarchical offcut tracking — when a tile is cut, the leftover is tracked as a shaped piece that can be placed elsewhere and itself cut.
+- Cascade invalidation — repositioning a parent piece invalidates placed offcut descendants (with confirmation modal).
+- Niche support: independent mode (5 droppable surfaces) or wrap-around mode (auto-populated lip tiles).
+- Printable cut sheet grouped by source tile.
+
+## Tech stack
+
+- **React 19** (`^19.2.4`) + **TypeScript** (strict mode, `~5.9.3`)
+- **Vite 8** (`^8.0.1`) with `@vitejs/plugin-react`
+- **Zustand 5** (`^5.0.12`) — single store, no middleware
+- **CSS Modules** — one `.module.css` per component, plus `src/styles/index.css` for globals
+- No other runtime deps. No router. No UI framework.
+
+## Project structure
 
 ```
 tile-planner-react/
 ├── public/
-│   └── tiles/                    # 1.jpg - 18.jpg (marble tile images)
+│   ├── tiles/                    # 1.jpg – 18.jpg (served at /tiles/N.jpg)
+│   ├── favicon.svg
+│   └── icons.svg
 ├── src/
-│   ├── main.tsx                  # Entry point, renders <App />
-│   ├── App.tsx                   # Root layout: TopBar + 3-panel flex layout
-│   ├── constants.ts              # TILE_W, TILE_H, GROUT, TILE_COUNT, default walls
+│   ├── main.tsx                  # Entry point: ReactDOM.createRoot(<App />)
+│   ├── App.tsx                   # TopBar + 3-panel layout + CascadeModal + ToastContainer + CutSheet
+│   ├── constants.ts              # TILE_W, TILE_H, GROUT, TILE_COUNT, STORAGE_KEY, DEFAULT_WALLS
 │   ├── store/
-│   │   ├── types.ts              # All TypeScript interfaces and type aliases
-│   │   └── index.ts              # Zustand store with all state + actions
-│   ├── services/
-│   │   ├── gridEngine.ts         # Grid calculation (pure math, no React)
-│   │   ├── offcutEngine.ts       # Offcut creation, cascade delete, image region
+│   │   ├── types.ts              # All domain types
+│   │   └── index.ts              # Zustand store (state + actions)
+│   ├── services/                 # Pure functions — no React, no DOM in most
+│   │   ├── gridEngine.ts         # Grid math (columns, rows, niche overlap)
+│   │   ├── offcutEngine.ts       # Offcut creation, cascade, validity
 │   │   ├── pieceHelpers.ts       # Piece registry utilities
 │   │   ├── persistence.ts        # localStorage + JSON export/import + migration
-│   │   ├── wrapAroundNiche.ts    # Auto-populate niche lip surfaces
-│   │   └── cutSheetEngine.ts     # Cut sheet data collection
+│   │   ├── wrapAroundNiche.ts    # Wrap-around niche lip computation
+│   │   ├── cutSheetEngine.ts     # Cut-sheet data aggregation
+│   │   └── dragImage.ts          # HTML5 drag-image canvas (DOM-using)
 │   ├── components/
-│   │   ├── TopBar/
-│   │   │   └── TopBar.tsx        # Title, toggles, save/load/print/clear buttons
-│   │   ├── TilePool/
-│   │   │   ├── TilePool.tsx      # Left panel: 2-column grid + offcut tree
-│   │   │   ├── PoolTile.tsx      # Single tile thumbnail (draggable)
-│   │   │   └── OffcutRow.tsx     # Inline offcut row below parent tile
-│   │   ├── WallView/
-│   │   │   ├── WallView.tsx      # Center panel orchestrator
-│   │   │   ├── WallTabs.tsx      # Wall tab bar with add button
-│   │   │   ├── WallGrid.tsx      # Scaled wall container with slots
-│   │   │   ├── GridSlot.tsx      # Single grid slot (drop target)
-│   │   │   ├── TileImage.tsx     # Tile image with rotation + crop
-│   │   │   ├── PlacementControls.tsx  # Rotate + anchor buttons overlay
-│   │   │   ├── NicheOverlay.tsx  # Blue dashed niche rectangle
-│   │   │   └── RemainderControls.tsx  # H/V remainder toggle buttons
-│   │   ├── NicheSurfaces/
-│   │   │   ├── NicheSurfaces.tsx # Niche surface grids container
-│   │   │   └── SurfaceGrid.tsx   # Single niche surface mini-grid
-│   │   ├── Settings/
-│   │   │   └── SettingsPanel.tsx  # Right panel: wall dims, niche config, delete
-│   │   ├── CutSheet/
-│   │   │   ├── CutSheet.tsx      # Print view container
-│   │   │   └── CutTileSection.tsx # Per-tile cut chain with SVG overlay
+│   │   ├── TopBar/               # Orientation + niche-mode toggles, save/load/print/clear
+│   │   ├── TilePool/             # Left panel: tiles + offcut tree, sidebar resizer
+│   │   │   ├── TilePool.tsx
+│   │   │   ├── PoolTile.tsx
+│   │   │   ├── OffcutRow.tsx
+│   │   │   ├── OffcutThumbnail.tsx
+│   │   │   └── SidebarResizer.tsx
+│   │   ├── WallView/             # Center panel: tabs + scaled wall + slots
+│   │   │   ├── WallView.tsx
+│   │   │   ├── WallTabs.tsx
+│   │   │   ├── WallGrid.tsx
+│   │   │   ├── GridSlot.tsx
+│   │   │   ├── TileImage.tsx
+│   │   │   ├── PlacementControls.tsx
+│   │   │   ├── NicheOverlay.tsx
+│   │   │   └── RemainderControls.tsx
+│   │   ├── NicheSurfaces/        # Below wall grid: 5 (independent) or 1 (wrap-around) surfaces
+│   │   │   ├── NicheSurfaces.tsx
+│   │   │   └── SurfaceGrid.tsx
+│   │   ├── Settings/             # Right panel: wall/niche dims + delete
+│   │   │   └── SettingsPanel.tsx
+│   │   ├── CutSheet/             # Print-only output
+│   │   │   ├── CutSheet.tsx
+│   │   │   └── CutTileSection.tsx
+│   │   ├── CascadeModal/         # Confirmation dialog for cascade-deletes
+│   │   │   └── CascadeModal.tsx
 │   │   └── Toast/
-│   │       └── ToastContainer.tsx # Fixed-position toast notifications
+│   │       └── ToastContainer.tsx
 │   └── styles/
-│       └── index.css             # Global styles, print media queries
-├── docs/
-│   ├── spec.md                   # Design specification
-│   └── plan.md                   # Implementation plan
+│       └── index.css             # Globals, buttons, scrollbars, @media print, .pulseHighlight
+├── docs/                         # spec.md, plan.md
+├── .claude/commands/             # Skills (this file lives here)
+├── index.html
+├── vite.config.ts
+├── tsconfig.json / tsconfig.app.json / tsconfig.node.json
+├── eslint.config.js
 └── package.json
 ```
 
-## Type System (`src/store/types.ts`)
+## Entry point + layout
 
-All data types are defined in one file:
+- `src/main.tsx` — standard `ReactDOM.createRoot(document.getElementById('root')!).render(<App />)`.
+- `src/App.tsx`:
+  1. Calls `useStore((s) => s.initialize)` in a `useEffect` on mount to load persisted state.
+  2. Renders a flex-column with `<TopBar />` and a flex-row containing `<TilePool />`, `<WallView />`, `<SettingsPanel />`.
+  3. Renders `<CutSheet />` (display:none except on print), `<ToastContainer />`, `<CascadeModal />` outside the main flex.
+  4. The whole main area is wrapped in `.no-print` so print shows only the cut sheet.
 
-```typescript
-type Orientation = 'portrait' | 'landscape'
-type NicheMode = 'wrap-around' | 'independent'
-type RemainderMode = 'left' | 'right' | 'split' | 'top' | 'bottom'
-type AnchorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+## Type system (`src/store/types.ts`)
 
+### Core data types
+
+```ts
+type Orientation = 'portrait' | 'landscape';
+type NicheMode = 'wrap-around' | 'independent';
+type RemainderMode = 'left' | 'right' | 'split' | 'top' | 'bottom';
+type AnchorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+//   ^ AnchorPosition is legacy; the current Placement uses offsetX/offsetY.
+
+interface Cutout      { x: number; y: number; w: number; h: number; }
+interface ImageRegion { x: number; y: number; w: number; h: number; }
+```
+
+### Piece
+
+```ts
 interface Piece {
-  id: string                    // "5", "5-B", "5-B1a"
-  sourceTileId: number          // which tile image to load (1-18)
-  parentId: string | null       // null for originals
-  width: number                 // natural dimensions in cm
-  height: number
+  id: string;                   // "5", "5-B", "5-B1", "5-B1a"  (hierarchical)
+  sourceTileId: number;         // 1..18 — which JPG this derives from
+  parentId: string | null;      // null for originals 1..18
+  width: number;                // cm, natural (rotation=0) dimensions
+  height: number;
   geometry: {
-    boundingBox: { w: number; h: number }
-    cutouts: Cutout[]           // empty=rect, entries=L/C-shape
-  }
-  imageRegion: ImageRegion      // region of source tile image
-  autoWrap?: boolean
+    boundingBox: { w: number; h: number };  // always equals width × height
+    cutouts: Cutout[];          // [] = rectangle, 1 = L, 2 = C, 4 = frame
+  };
+  imageRegion: ImageRegion;     // cm rect into the source tile image
+  autoWrap?: boolean;           // true for auto-placed niche-lip pieces
 }
+```
 
+`geometry.cutouts` are stored in the piece's **natural (rotation=0) coordinate system**, `[0, width] × [0, height]`. When used under a non-zero rotation, they must be rotated via `rotateRectInPiece()` (see `offcut-geometry.md`).
+
+### Placement
+
+```ts
 interface Placement {
-  pieceId: string
-  rotation: number              // 0, 90, 180, 270
-  anchor: AnchorPosition
-  autoWrap?: boolean
+  pieceId: string;
+  rotation: number;   // 0 | 90 | 180 | 270
+  offsetX: number;    // cm: piece.top-left relative to slot.top-left. Range: [slotW - effW, 0]
+  offsetY: number;    // cm: piece.top-left relative to slot.top-left. Range: [slotH - effH, 0]
+  autoWrap?: boolean; // true for auto-placed lip tiles
 }
+```
+
+Negative `offsetX` means the piece extends **left** of the slot — i.e. part of the piece will be cut off on the left. Zero means flush top-left.
+
+### Wall + niche
+
+```ts
+interface Niche { width, height, depth, fromFloor, fromLeft: number; }  // all cm
 
 interface Wall {
-  id: string
-  name: string
-  width: number                 // cm
-  height: number
-  niche: Niche | null
-  remainderH: 'left' | 'right' | 'split'
-  remainderV: 'top' | 'bottom' | 'split'
-  tiles: Record<string, Placement>     // keyed by "row,col"
-  nicheTiles?: NicheTiles
+  id: string;
+  name: string;
+  width: number;                           // cm
+  height: number;
+  niche: Niche | null;
+  remainderH: 'left' | 'right' | 'split';  // partial-tile position horizontally
+  remainderV: 'top'  | 'bottom' | 'split';
+  tiles: Record<string, Placement>;        // key = "row,col"
+  nicheTiles?: NicheTiles;                 // present iff niche != null
 }
 
-interface AppState {
-  orientation: Orientation
-  nicheMode: NicheMode
-  activeWallId: string
-  pieces: Record<string, Piece>
-  walls: Wall[]
-  toasts: Toast[]
+type NicheTiles = {
+  back:   Record<string, Placement>;  // niche.width × niche.height
+  left:   Record<string, Placement>;  // niche.depth × niche.height
+  right:  Record<string, Placement>;  // niche.depth × niche.height
+  top:    Record<string, Placement>;  // niche.width × niche.depth
+  bottom: Record<string, Placement>;  // niche.width × niche.depth
+};
+type NicheSurfaceKey = keyof NicheTiles;
+```
+
+### Grid + niche-overlap
+
+```ts
+interface GridSlot { row, col, x, y, w, h: number; isPartialW, isPartialH: boolean; }
+interface GridResult { totalRows, totalCols: number; colWidths, rowHeights: number[]; slots: GridSlot[]; tw, th: number; }
+interface NicheRect { left, top, width, height, right, bottom: number; }
+interface AffectedSlot extends GridSlot {
+  nicheOverlap: { left, top, right, bottom: number };
+  fullyInside: boolean;  // slot is entirely within niche opening → hidden from wall view
+}
+interface NicheOverlapResult { affectedSlots: AffectedSlot[]; nicheRect: NicheRect | null; }
+```
+
+### App state
+
+```ts
+interface TilePlannerState {
+  orientation: Orientation;
+  nicheMode: NicheMode;
+  activeWallId: string;
+  pieces: Record<string, Piece>;
+  walls: Wall[];
+  toasts: Toast[];
+  sidebarWidth: number;
+  cascadePreview?: CascadePreview | null;  // runtime-only, NOT persisted
+}
+
+interface Toast { id: string; message: string; }
+
+interface RemovedPlacement { pieceId: string; wallName: string; surface: string | null; }
+
+interface AffectedDescendant { pieceId: string; wallName: string; slotKey: string; surface: string | null; }
+
+interface CascadePreview {
+  affectedPieceIds: string[];
+  affectedDescendants: AffectedDescendant[];
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 ```
 
-## Zustand Store (`src/store/index.ts`)
+### Drag data
 
-Single store with ~740 lines. All state mutations happen through store actions — components never modify state directly.
+Three flavors of `DataTransfer` payload, stringified into `text/plain`:
 
-### State Shape
-```typescript
-{
-  orientation, nicheMode, activeWallId,
-  pieces: Record<string, Piece>,
-  walls: Wall[],
-  toasts: Toast[]
-}
+```ts
+type DragData =
+  | { source: 'pool';  tileId: string }
+  | { source: 'wall';  key: string }                                   // "row,col"
+  | { source: 'niche'; surfaceKey: NicheSurfaceKey; key: string };
 ```
 
-### Key Actions
+### Cut sheet
+
+```ts
+interface CutPiece { label, placement, cutDesc: string; width, height, centerX, centerY: number; }
+interface TileCut { type: 'horizontal' | 'vertical'; positionCm: number; }
+interface CutEntry { tileId, wallId, wallName: string; pieces: CutPiece[]; tileCuts: TileCut[]; waste: number; }
+```
+
+## Zustand store (`src/store/index.ts`, ~1030 lines)
+
+Single `create<Store>((set, get) => ({...}))`. No middleware (no devtools, no persist — persistence is handled manually via `_save`). `Store = TilePlannerState & TilePlannerActions`.
+
+Constants at the top of the file:
+
+```ts
+const SIDEBAR_MIN = 180;
+const SIDEBAR_MAX = 400;
+```
+
+### Actions catalogue
 
 | Action | Purpose |
-|--------|---------|
-| `setActiveWall(id)` | Switch active wall tab |
-| `setOrientation(o)` | Toggle portrait/landscape (clears all placements with confirmation) |
-| `setNicheMode(mode)` | Toggle wrap-around/independent |
-| `addWall()` | Create new wall with defaults (100×267) |
-| `deleteWall(id)` | Remove wall, return tiles to pool |
-| `updateWallDimension(id, field, value)` | Change width/height, validates existing placements |
-| `toggleNiche(id, enabled)` | Add/remove niche on a wall |
-| `updateNiche(id, field, value)` | Change niche dimensions |
-| `placeTile(wallId, slotKey, pieceId)` | Place piece in slot, create offcuts |
-| `unplaceTile(wallId, slotKey)` | Remove piece, cascade delete children |
-| `swapTiles(wallId, fromKey, toKey)` | Swap two tiles on same wall |
-| `rotatePlacement(wallId, slotKey)` | Cycle rotation, cascade + recreate offcuts |
-| `setAnchor(wallId, slotKey, anchor)` | Change anchor, cascade + recreate offcuts |
-| `placeNicheTile(...)` | Place on niche surface |
-| `unplaceNicheTile(...)` | Remove from niche surface |
-| `clearAll()` | Reset all placements and pieces |
-| `showToast(msg)` | Display notification |
-| `_save()` | Internal: persist to localStorage |
-| `_applyWrapAround()` | Internal: recompute auto-placed lip tiles |
+|---|---|
+| `initialize()` | Load from localStorage (if present) and run `_applyWrapAround()`. Called once on App mount. |
+| `setActiveWall(wallId)` | Switch active wall tab. |
+| `setOrientation(orientation)` | Swap portrait↔landscape. **Clears all placements** and resets pieces to full originals at the new dims. Caller (TopBar) shows a `confirm()` if any tiles are placed. |
+| `setNicheMode(mode)` | `'wrap-around'` vs `'independent'`. Triggers `_applyWrapAround`. |
+| `addWall()` | Append new wall `{100×267, split/bottom, no niche}` with id `wall-${Date.now()}`. Sets it active. |
+| `deleteWall(wallId)` | Remove the wall (refuses if only one left). If active, moves active to previous. |
+| `updateWallDimension(wallId, 'width'|'height', value)` | Resize a wall. Recomputes the grid and **cascade-deletes placements whose slot no longer exists or no longer fits**, emitting toasts. |
+| `setRemainderH/V(wallId, mode)` | Change partial-tile position. |
+| `toggleNiche(wallId, enabled)` | Add niche with defaults `{45×45×15, fromFloor:125, fromLeft:25}` or remove it (drops `nicheTiles`). Triggers wrap-around. |
+| `updateNiche(wallId, field, value)` | Change a single niche dimension. Triggers wrap-around. |
+| `centerNiche(wallId)` | Sets `fromLeft = round((wallW - nicheW)/2, 0.1)`. |
+| `placeTile(wallId, slotKey, pieceId)` | Core placement. See flow below. |
+| `unplaceTile(wallId, slotKey)` | Remove placement + cascade-delete its children. |
+| `swapTiles(wallId, fromKey, toKey)` | Same-wall swap. Cascade-deletes both pieces' children and recreates offcuts from new slot dims. |
+| `rotatePlacement(wallId, slotKey)` | Cycle to next rotation where the piece still covers the slot. Opens cascade modal if descendants are placed. |
+| `setOffsets(wallId, slotKey, offsetX, offsetY)` | Reposition via `findValidOffset()` (snaps around cutouts). Opens cascade modal if needed. Core of in-slot drag. |
+| `placeNicheTile(wallId, surfaceKey, slotKey, pieceId)` | Place on niche surface. Niche surfaces are single-slot grids (`slotKey === '0,0'`). |
+| `unplaceNicheTile(wallId, surfaceKey, slotKey)` | Remove + cascade-delete. |
+| `swapNicheTiles(wallId, fromSurface, fromKey, toSurface, toKey)` | Cross-surface swap. Does NOT cascade-delete (lightweight). |
+| `rotateNichePlacement(wallId, surfaceKey, slotKey)` | Same as wall rotate, but for niche surfaces. |
+| `setNicheOffsets(wallId, surfaceKey, slotKey, x, y)` | Same as `setOffsets`, niche version. |
+| `doExportJSON()` | Downloads state as `tile-layout.json`. |
+| `doImportJSON()` | File picker; runs migration + validation. |
+| `clearAll()` | Reset pieces + clear all wall/niche placements. |
+| `setSidebarWidth(px)` | Clamps to `[SIDEBAR_MIN=180, SIDEBAR_MAX=400]` and persists. |
+| `showToast(message)` | Pushes + auto-removes after 3s. |
+| `removeToast(id)` | Manual dismiss. |
+| `showCascadePreview(ids, descendants, onConfirm, onCancel)` | Opens the CascadeModal and highlights affected slots. |
+| `hideCascadePreview()` | Close modal without applying. |
+| `_save()` | Internal: `persistState({...})` to localStorage. |
+| `_applyWrapAround()` | Internal: when `nicheMode === 'wrap-around'`, call `computeWrapAroundNicheTiles()` per wall. |
 
-### Internal Flow
+### Internal flow — placement pattern
 
-Every mutation that changes placements follows this pattern:
-1. Cascade-delete affected pieces' descendants
-2. Update the placement in `walls`
-3. Create new offcuts via `createOffcuts()`
-4. Call `_applyWrapAround()` to recompute auto-placed niche lip tiles
-5. Call `_save()` to persist to localStorage
+Every action that changes placements follows this pattern:
 
-## Services (Pure Functions)
+1. Find the wall.
+2. Cascade-delete offcut descendants of any pieces whose geometry is about to change (via `cascadeDelete()` from `offcutEngine`).
+3. Emit a toast for each cross-surface/cross-wall removal.
+4. Update `wall.tiles[slotKey]` with the new `Placement`.
+5. Recompute offcuts via `createOffcuts(pieces, pieceId, slotW, slotH, rotation, offsetX, offsetY)`.
+6. `_applyWrapAround()` → `_save()`.
 
-All services are pure functions with no React or DOM dependencies. They operate on the data types from `types.ts`.
+## Services
 
-### `gridEngine.ts` (148 lines)
+All files in `src/services/`. Pure functions operating on domain types. `dragImage.ts` is the only one that touches the DOM.
 
-Grid calculation — determines how tiles fit on a wall.
+### `gridEngine.ts`
 
-- **`computeSizes(wallDim, tileDim, grout, mode)`** — computes column widths or row heights. Handles 'left'/'right'/'split' remainder distribution. Split mode produces `fullCount + 2` entries (half-remainder on each side).
-- **`computeGrid(wall, orientation)`** — returns `{ totalRows, totalCols, colWidths, rowHeights, slots, tw, th }` where each slot has `{ row, col, x, y, w, h, isPartialW, isPartialH }`.
-- **`computeNicheOverlap(wall, grid)`** — intersects slots with the niche rectangle. Returns `{ affectedSlots, nicheRect }` where each affected slot has `fullyInside` flag.
+- **`computeSizes(wallDim, tileDim, grout, mode) → number[]`** — column widths / row heights for one axis. Special cases:
+  - Exact fit (`remainder < grout`): return `fullCount × [tileDim]`.
+  - **`fullCount === 0`** (wall smaller than one tile + grout): return `[wallDim]` — single partial slot spanning the entire axis, **no grout**. This is why tiny niche surfaces render as single-slot grids (`slotKey === '0,0'`).
+  - `'right'`/`'bottom'`: full tiles then partial at the end.
+  - `'left'`/`'top'`: partial first, then full tiles.
+  - `'split'`: `halfLeft` + `fullCount × tileDim` + `halfRight`, each half rounded to 0.1cm.
+- **`computeGrid(wall, orientation) → GridResult`** — builds `slots[]` by stacking `rowHeights × colWidths` with grout gaps. Each slot has `isPartialW / isPartialH` flags.
+- **`computeNicheOverlap(wall, grid) → { affectedSlots, nicheRect }`** — Niche rect is `{left: fromLeft, top: wallHeight - fromFloor - height, ...}`. Each affected slot gets `nicheOverlap` (intersection rect) and `fullyInside` (hidden in WallGrid).
 
-Key math: `fullCount = floor(wallDim / (tileDim + grout))`, `remainder = wallDim - fullCount * (tileDim + grout)`. Grout is 0.2cm (2mm).
+### `offcutEngine.ts`
 
-### `offcutEngine.ts` (318 lines)
+All the offcut geometry. See `offcut-geometry.md` for deep dive. Exported functions:
 
-Offcut creation and tracking.
+- `generateOffcutId(parentId, index)` — hierarchical IDs: `"5" → "5-B"`, `"5-B" → "5-B1"`, `"5-B1" → "5-B1a"`.
+- `computeOffcutImageRegion(parent, rotation, ox, oy, ow, oh)` — maps offcut's piece-local coords back into the original tile image frame, handling all 4 rotations.
+- `isOffsetValid(piece, rotation, slotW, slotH, offsetX, offsetY)` — checks slot lies entirely on material (no cutout overlap).
+- `findValidOffset(piece, rotation, slotW, slotH, prefX, prefY)` — clamps + snaps to cutout edges. Fast path for rectangles.
+- `createOffcuts(pieces, pieceId, slotW, slotH, rotation, offsetX, offsetY) → { offcuts, pieces }` — 1 offcut for L/C/frame/strip, 2 offcuts for disconnected strips, 0 for exact fit.
+- `cascadeDelete(pieces, walls, pieceId) → { removedPlacements, pieces, walls }` — removes all descendants from pieces + placements.
+- `canPlacePiece(pieces, pieceId, slotW, slotH)` — true if any rotation fits.
+- `getValidAnchors(eff, slot)` — **deprecated**, returns `['top-left']` for backward-compat. The anchor system was replaced by continuous offsets.
 
-- **`generateOffcutId(parentId, index)`** — hierarchical naming: `"5"→"5-B"`, `"5-B"→"5-B1"`, `"5-B1"→"5-B1a"`.
-- **`computeOffcutImageRegion(parent, rotation, ox, oy, ow, oh)`** — maps offcut position in parent's rotated space back to original tile image coordinates. Handles all 4 rotations.
-- **`createOffcuts(pieces, pieceId, slotW, slotH, rotation, anchor)`** — the main function. Computes overhangs based on anchor, creates 1-3 rectangular offcut pieces, registers them. Returns updated pieces dict.
-- **`cascadeDelete(pieces, walls, pieceId)`** — recursively removes all descendants from pieces dict and their placements from all walls. Returns `{ pieces, walls, removed }`.
-- **`getValidAnchors(effectiveDims, slot)`** — returns which anchor positions produce distinct cuts.
-- **`canPlacePiece(pieces, pieceId, slotW, slotH)`** — checks all 4 rotations for fit.
+### `pieceHelpers.ts`
 
-### `pieceHelpers.ts` (114 lines)
+- `getTileW(orientation)`, `getTileH(orientation)` — returns 60/120 or 120/60 depending on orientation.
+- `initPieces(orientation)` — creates pieces 1..18 as full originals.
+- `getEffectiveDims(piece, rotation)` — `{w, h}` with w/h swapped for 90°/270°.
+- `getChildPieces(pieces, pieceId)` — direct children via `parentId === pieceId`.
+- `getAllDescendants(pieces, pieceId)` — BFS all descendant IDs.
+- `getPiecePlacement(walls, pieceId) → { wall, key, surface } | null` — first match searching wall tiles then niche surfaces.
+- `getPlacedPieceIds(walls) → Map<pieceId, { wallId, location }>`.
+- `getUnplacedPieceIds(pieces, walls)`.
 
-Piece registry utilities.
+### `persistence.ts`
 
-- **`getEffectiveDims(piece, rotation)`** — returns `{w, h}` with dimensions swapped for 90°/270°.
-- **`getChildPieces(pieces, pieceId)`** — direct children.
-- **`getAllDescendants(pieces, pieceId)`** — recursive all descendant IDs.
-- **`getPiecePlacement(walls, pieceId)`** — finds which wall/slot/surface a piece is placed in.
-- **`getPlacedPieceIds(walls)`** — Map of all placed piece IDs → `{wallId, location}`.
-- **`initPieces(orientation)`** — creates the 18 original tile entries.
+- `loadState()` — reads `STORAGE_KEY = 'tile-planner-state'`, runs `migrateState` + `validateState`, ensures `pieces` is initialized.
+- `saveState(state)` — JSON-stringify + localStorage.
+- `migrateState(s)` — migrates old vanilla-JS format (`{tileId: N, anchor: 'top-left'}`) to new (`{pieceId, rotation, offsetX, offsetY}`). Only runs if `pieces` is empty.
+- `validateState(s)` — removes duplicate placements and warns.
+- `exportJSON(state)` — download as `tile-layout.json` via Blob + anchor click.
+- `importJSON()` — file picker, returns Promise. Resolves to `null` on cancel/error.
 
-### `persistence.ts` (188 lines)
+### `wrapAroundNiche.ts`
 
-State persistence.
+- `computeWrapAroundNicheTiles(wall, pieces, orientation) → { wall, pieces }` — in wrap-around mode, scans niche-affected wall slots and auto-populates the lip surfaces (left/right/top/bottom) using the appropriate child offcut (or falls back to the parent piece). Marks auto-placed placements with `autoWrap: true`, and the synthetic pieces with `autoWrap: true` so they get cleaned up on re-run.
 
-- **`saveState(state)`** — serializes to localStorage under key `tile-planner-state`.
-- **`loadState()`** — deserializes + migrates old format.
-- **`migrateState(state)`** — converts old `{ tileId: N }` placements to `{ pieceId, rotation, anchor }`.
-- **`exportJSON(state)`** — downloads state as `.json` file.
-- **`importJSON(callback)`** — file picker that reads, migrates, and returns parsed state.
+### `cutSheetEngine.ts`
 
-### `wrapAroundNiche.ts` (128 lines)
+- `collectCutSheetData(pieces, walls) → CutEntry[]` — per source tile 1..18, walks the piece tree, computes cut positions and piece labels, returns the data the `CutSheet` component renders with SVG overlays.
 
-Wrap-around niche mode logic.
+### `dragImage.ts` (DOM)
 
-- **`applyWrapAround(walls, pieces, nicheMode, orientation)`** — for each wall with a niche in wrap-around mode, finds wall-face tiles intersecting the niche, looks up their offcuts, and auto-places them on the corresponding lip surfaces. Returns updated `{ walls, pieces }`.
+- Module-level `imageCache: Map<tileId, HTMLImageElement>` and `imageLoading: Map<tileId, Promise>`.
+- `preloadTileImage(tileId)` — fires off an `<img>` load and caches.
+- `createPieceDragImage(piece, targetWidth) → { canvas, cleanup } | null` — synchronously builds a canvas with `ctx.clip('evenodd')` for cutouts, draws the tile image via `drawImage(img, sx, sy, sw, sh, ...)`, appends it off-screen, returns the canvas for `dataTransfer.setDragImage()`. **Must be called synchronously inside dragstart** — the browser snapshots it immediately. Returns null if image not yet cached — that's why components call `preloadTileImage` in a `useEffect`.
 
-### `cutSheetEngine.ts` (343 lines)
+## Component architecture
 
-Cut sheet data collection.
+### `App.tsx`
+Flex-column: `<TopBar>` + flex-row of three panels. Plus three top-level siblings: `<CutSheet>`, `<ToastContainer>`, `<CascadeModal>`.
 
-- **`collectCutSheetData(pieces, walls)`** — iterates tiles 1-18, collects the full piece tree for each, returns structured data for the CutSheet component.
+### `TopBar/TopBar.tsx`
+Orientation toggle (shows `confirm()` if any tiles placed), niche-mode toggle, Save/Load/Print/Clear buttons. `Clear All` also confirms.
 
-## Component Architecture
+### `TilePool/`
 
-### App.tsx
-Root layout — flex row with `TilePool | WallView + NicheSurfaces | SettingsPanel`, `TopBar` above, `CutSheet` hidden (print only), `ToastContainer` fixed.
+- `TilePool.tsx` — Left panel. Computes `thumbW` from `sidebarWidth - POOL_PADDING (12)` minus `TILE_GAP (4)`. Renders 18 `families` (parent `PoolTile` + inline `OffcutRow` tree) inside a drop target. Drop accepts `wall`/`niche` drags → unplace.
+- `PoolTile.tsx` — Single tile thumbnail. Draggable iff not placed. `onDragStart`: sets `{source: 'pool', tileId}`, builds drag image via `createPieceDragImage` for a full-tile Piece.
+- `OffcutRow.tsx` — Recursive: renders child offcuts with indentation.
+- `OffcutThumbnail.tsx` — Renders offcut at proportional scale with CSS `clip-path: polygon(evenodd, ...)` to mask out cutouts.
+- `SidebarResizer.tsx` — Thin vertical handle on the right edge. `onMouseDown` installs `mousemove`/`mouseup` on `document` to live-adjust `sidebarWidth`.
 
-### TopBar
-Orientation toggle (Portrait/Landscape), niche mode toggle (Wrap-around/Independent), Save/Load/Print/Clear buttons. Orientation toggle shows `confirm()` if tiles are placed.
+### `WallView/`
 
-### TilePool
-Left panel (140px). Renders 18 original tiles in a 2-column CSS grid. Each `PoolTile` shows the marble thumbnail, tile number badge, and placed/available status. Below each placed tile, `OffcutRow` components render the offcut tree inline with indentation.
+- `WallView.tsx` — Composes `WallTabs`, the scaled wall area (with labels), `RemainderControls`, `NicheSurfaces` if niche present. Uses `ResizeObserver` to keep `scale = min(availWidth/wallW, availHeight/wallH)` up-to-date.
+- `WallTabs.tsx` — Tab bar with "+" to add a wall.
+- `WallGrid.tsx` — Positions all `GridSlot`s absolutely inside a `relative` container sized `wallW*scale × wallH*scale`. Renders `NicheOverlay` if niche present. Marks `fullyInside` slots as hidden and `partialNiche` slots as `isNicheCut`.
+- `GridSlot.tsx` — Drop target + drag source + in-slot drag source. Three drag systems converge here. See `ui-interactions.md`. Adds `wall-slot-placed` global class for hover-controls selector.
+- `TileImage.tsx` — The oversized-image-with-negative-offset technique. Transform-origin is the **center of the visible crop region**, not the image center. See `ui-interactions.md`.
+- `PlacementControls.tsx` — Hover overlay with rotate (`↻`) and remove (`×`) buttons.
+- `NicheOverlay.tsx` — Blue dashed rect at niche position. Renders the placed back-surface tile inside it.
+- `RemainderControls.tsx` — Horizontal/Vertical remainder-mode toggles.
 
-Drag source: unplaced tiles and offcuts set `dataTransfer` with `{ source: 'pool', pieceId }`.
+### `NicheSurfaces/`
 
-Drop target: the pool container accepts tiles dragged from wall slots (unplace + cascade).
+- `NicheSurfaces.tsx` — In independent mode: 5 droppable `SurfaceGrid`s. In wrap-around mode: 1 droppable `SurfaceGrid` for back + read-only list of auto-populated lip tiles.
+- `SurfaceGrid.tsx` — Mini wall grid for a single niche surface. `SlotCell` (subcomponent) does HTML5 drag + in-slot mouse drag + rotate/remove controls. `surfaceScale = min(200/surfaceW, 2)`.
 
-### WallView
-Center panel. Contains `WallTabs`, the wall grid area, scale indicator, `RemainderControls`, and `NicheSurfaces`.
+### `Settings/SettingsPanel.tsx`
+Width/height inputs, Has-niche checkbox, niche fields (width/height/depth/fromFloor/fromLeft), Center button, Delete Wall button (with confirm).
 
-### WallGrid
-Computes the grid via `computeGrid()`, calculates scale as `min(availableWidth/wallWidth, availableHeight/wallHeight)`, then renders `GridSlot` components absolutely positioned within a relatively positioned wall container. Also renders `NicheOverlay` if the wall has a niche.
+### `CutSheet/`
+- `CutSheet.tsx` — `display: none` on screen, `display: block` on print. Iterates `collectCutSheetData(pieces, walls)`.
+- `CutTileSection.tsx` — Per-tile SVG overlay showing cut lines on the tile image.
 
-### GridSlot
-A single grid slot — drop target and drag source. Renders `TileImage` if a piece is placed, otherwise shows dashed border. Adds `PlacementControls` overlay on placed tiles.
+### `CascadeModal/CascadeModal.tsx`
+Backdrop + modal reading `cascadePreview` from the store. Renders list of affected descendants with `wallName · slot (row,col)` or `wallName · niche back (0,0)`. Two buttons: Cancel / Confirm & Remove.
 
-Handles DnD events: `onDragOver`, `onDrop` (pool→slot placement, slot→slot swap), `onDragStart` (for rearranging).
+### `Toast/ToastContainer.tsx`
+Fixed-position list bound to `state.toasts`. Toasts auto-dismiss in `showToast` via `setTimeout(() => removeToast(id), 3000)`.
 
-### TileImage
-Renders the marble tile image correctly cropped and rotated within a slot. Uses the oversized-image-with-negative-offset technique:
+## Data flow diagrams
+
+### Place a tile (pool → slot)
 
 ```
-position: absolute
-left: -(imageRegion.x * scale)
-top: -(imageRegion.y * scale)
-width: srcW * scale
-height: srcH * scale
+PoolTile onDragStart: dataTransfer = {source: 'pool', tileId}
+                    → setDragImage(canvas)
+GridSlot onDrop: parse DragData
+              → store.placeTile(wallId, slotKey, pieceId)
+                   1. cascadeDelete(existing)       (if slot occupied)
+                   2. cascadeDelete(pieceId)        (stale offcuts of this piece)
+                   3. findValidOffset()             (avoid cutouts for L/C/frame)
+                   4. wall.tiles[slotKey] = {pieceId, rotation: 0, offsetX, offsetY}
+                   5. createOffcuts()               (register new child pieces)
+                   6. _applyWrapAround()
+                   7. _save()
+React re-renders via Zustand subscription.
 ```
 
-For rotation, `transform-origin` is set to the center of the **visible crop region**, not the image center:
+### Rotate
+
 ```
-originX = (ir.x + slotW/2) * scale
-originY = (ir.y + slotH/2) * scale
-transform: rotate(Ndeg)
-transform-origin: originX originY
-```
-
-This is critical — using `center center` causes the image to fly out of the slot because the image is much larger than the slot.
-
-### PlacementControls
-Overlay on placed tiles with:
-- **Rotate button (↻)**: cycles valid rotations (skips rotations where piece doesn't fit)
-- **Anchor dots**: colored dots at valid snap corners (active = blue, inactive = grey)
-
-Both trigger store actions that cascade-delete children and recreate offcuts.
-
-### NicheSurfaces
-Below the wall grid. In **independent mode**: renders 5 `SurfaceGrid` components (back, left, right, top, bottom) as mini wall grids with their own drop targets. In **wrap-around mode**: shows back surface as droppable + lip surfaces as read-only info.
-
-### SettingsPanel
-Right panel (200px). Width/height inputs, has-niche checkbox, niche dimension inputs with Center button, Delete Wall button.
-
-### CutSheet
-Hidden on screen (`display: none`), shown on print (`@media print`). Groups by source tile (1-18), shows full piece tree with SVG cut line overlays on the tile image and per-piece placement descriptions.
-
-### ToastContainer
-Fixed bottom-right. Displays brief notifications for cross-wall cascade deletions. Toasts auto-dismiss after 3 seconds.
-
-## Data Flow
-
-### Placing a Tile
-```
-User drags PoolTile → GridSlot onDrop fires →
-  store.placeTile(wallId, slotKey, pieceId) →
-    cascadeDelete old occupant (if any) →
-    wall.tiles[key] = { pieceId, rotation: 0, anchor: 'top-left' } →
-    createOffcuts() → new pieces registered →
-    _applyWrapAround() → _save()
-→ React re-renders (Zustand subscription)
+PlacementControls onClick ↻: store.rotatePlacement(wallId, slotKey)
+  1. find next valid rotation (eff.w >= slot.w, eff.h >= slot.h)
+  2. check for placed descendants
+  3. if any → showCascadePreview(ids, descendants, applyRotate, hideCascadePreview)
+             CascadeModal renders; affected slots get .pulseHighlight
+             on Confirm → applyRotate()
+     else → applyRotate() immediately
+  4. applyRotate: cascadeDelete → update placement → createOffcuts → wrap → save
 ```
 
-### Rotating
-```
-User clicks ↻ in PlacementControls →
-  store.rotatePlacement(wallId, slotKey) →
-    cascadeDelete all children →
-    cycle to next valid rotation →
-    createOffcuts() with new rotation →
-    _applyWrapAround() → _save()
-```
+### In-slot drag (reposition)
 
-### Cascade Deletion
 ```
-cascadeDelete(pieces, walls, pieceId) →
-  getAllDescendants() recursively →
-  for each: find placement across all walls, remove it →
-  delete from pieces →
-  return { pieces, walls, removed } →
-  store.showToast() for each cross-wall removal
+User mousedown on TileImage (only if effW > slotW OR effH > slotH):
+  GridSlot.handleImageMouseDown:
+    preventDefault → intercept HTML5 drag
+    record initial {mouseX, mouseY, offsetX, offsetY}
+    install document mousemove + mouseup
+    mousemove: compute target = init + (delta / scale)
+               findValidOffset → setDraftOffset{X,Y}
+               TileImage re-renders with draft offsets (via props)
+    mouseup:   setOffsets(wallId, slotKey, finalX, finalY) — may trigger cascade
 ```
 
-## CSS Architecture
+### Cascade
 
-- **CSS Modules**: each component has its own `.module.css` file (scoped class names)
-- **Global styles** in `src/styles/index.css`: body reset, print media queries
-- **Print CSS**: `@media print` hides `.app-layout`, `.top-bar` etc., shows `.cut-sheet`
-- **No CSS framework** — plain CSS with flexbox/grid
+```
+cascadeDelete(pieces, walls, pieceId):
+  descendants = getAllDescendants(pieces, pieceId)
+  for each descId:
+    loc = getPiecePlacement(walls, descId)   // {wall, key, surface?}
+    if loc: delete from newWalls[...].tiles or .nicheTiles[surface]
+    delete newPieces[descId]
+    push RemovedPlacement
+  return { removedPlacements, pieces, walls }
 
-## Key Constants (`src/constants.ts`)
-
-```typescript
-TILE_W = 60        // cm (portrait width)
-TILE_H = 120       // cm (portrait height)
-GROUT = 0.2        // cm (2mm)
-TILE_COUNT = 18
+Caller emits showToast() per removedPlacement.
 ```
 
 ## Persistence
 
-- **localStorage key**: `tile-planner-state`
-- **JSON export**: full state object downloaded as `tile-layout.json`
-- **Migration**: old vanilla JS format `{ tileId: N }` auto-migrated to `{ pieceId, rotation, anchor }` on load
+- **localStorage key**: `tile-planner-state` (exported as `STORAGE_KEY` from `constants.ts`).
+- **What's persisted**: `orientation, nicheMode, activeWallId, pieces, walls, sidebarWidth`. **Not** persisted: `toasts`, `cascadePreview`.
+- **JSON export**: `tile-layout.json` (same shape + `toasts: []`).
+- **Migration** (`migrateState`):
+  - Old format: placements were `{tileId: number}` or `{pieceId, rotation, anchor}`.
+  - New format: `{pieceId, rotation, offsetX, offsetY}`.
+  - Migration only runs when `pieces` is empty (first load of old state).
+- **Validation** (`validateState`): silently drops duplicate placements (same piece in multiple slots) and console-warns.
 
-## Common Modifications
+## Key constants (`src/constants.ts`)
 
-### Adding More Tiles
-Update `TILE_COUNT` in `constants.ts`. Add images to `public/tiles/`.
+```ts
+TILE_COUNT  = 18;
+TILE_W      = 60;     // cm, portrait width
+TILE_H      = 120;    // cm, portrait height
+GROUT       = 0.2;    // cm (2mm)
+STORAGE_KEY = 'tile-planner-state';
+```
 
-### Changing Tile Dimensions
-Update `TILE_W`, `TILE_H` in `constants.ts`. The grid engine and offcut engine read from these.
+Default walls:
 
-### Changing Default Walls
-Edit the `DEFAULT_WALLS` array in `store/index.ts` (or `constants.ts` if extracted there).
+```ts
+DEFAULT_WALLS = [
+  { id: 'wall-1', name: 'Wall 1', width:  75, height: 267, niche: null, remainderH: 'split', remainderV: 'bottom' },
+  { id: 'wall-2', name: 'Wall 2', width: 179, height: 267, niche: null, remainderH: 'split', remainderV: 'bottom' },
+  { id: 'wall-3', name: 'Wall 3', width:  95, height: 267,
+    niche: { width: 45, height: 45, depth: 15, fromFloor: 125, fromLeft: 25 },
+    remainderH: 'split', remainderV: 'bottom',
+    nicheTiles: { back: {}, left: {}, right: {}, top: {}, bottom: {} } },
+];
+```
 
-### Adding a New Service
-Create a new `.ts` file in `src/services/`. Keep it pure — no React imports, no DOM access. Accept data as parameters, return new data.
+(The store deep-clones `DEFAULT_WALLS` via `JSON.parse(JSON.stringify(...))` to avoid accidental shared mutation.)
 
-### Adding a New Component
-Create a new directory in `src/components/` with the component `.tsx` and optional `.module.css`. Keep components under ~200 lines. If a component grows, split it.
-
-## Development
+## Build / dev commands
 
 ```bash
 cd ~/projects/tile-planner-react
-npm run dev      # Start dev server (Vite)
-npm run build    # Production build
-npm run preview  # Preview production build
+npm install          # first time
+npm run dev          # vite — http://localhost:5173
+npm run build        # tsc -b && vite build  — outputs to dist/
+npm run preview      # preview the built app
+npm run lint         # eslint
 ```
 
-Tile images must be in `public/tiles/` (1.jpg through 18.jpg). Copy from the vanilla project if needed:
-```bash
-cp ~/projects/tile-planner/tiles/*.jpg public/tiles/
-```
+TypeScript is strict mode. `npm run build` will fail on any type error.
+
+Tile images must be present at `public/tiles/1.jpg` … `18.jpg` — they're served directly at `/tiles/N.jpg` (root, not under `/public`).
+
+See `deployment.md` for deploy details, `offcut-geometry.md` for the shape math, `ui-interactions.md` for DnD internals, `debugging.md` for gotchas and testing.
