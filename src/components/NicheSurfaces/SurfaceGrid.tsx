@@ -11,6 +11,7 @@ import { computeGrid } from '../../services/gridEngine';
 import { useStore } from '../../store';
 import { preloadTileImage, createPieceDragImage } from '../../services/dragImage';
 import { getEffectiveDims } from '../../services/pieceHelpers';
+import { findValidOffset } from '../../services/offcutEngine';
 import styles from './NicheSurfaces.module.css';
 
 interface SurfaceGridProps {
@@ -137,13 +138,24 @@ function SlotCell({
 
     const onMove = (ev: MouseEvent) => {
       const d = dragRef.current;
-      if (!d) return;
+      if (!d || !piece || !placement) return;
       const dxCm = (ev.clientX - d.startMouseX) / surfaceScale;
       const dyCm = (ev.clientY - d.startMouseY) / surfaceScale;
-      const nx = Math.max(d.minX, Math.min(0, d.initOffsetX + dxCm));
-      const ny = Math.max(d.minY, Math.min(0, d.initOffsetY + dyCm));
-      setDraftOffsetX(nx);
-      setDraftOffsetY(ny);
+      const targetX = d.initOffsetX + dxCm;
+      const targetY = d.initOffsetY + dyCm;
+      // Snap to a valid position that avoids cutouts (L/C/frame shapes)
+      const valid = findValidOffset(
+        piece,
+        placement.rotation || 0,
+        slot.w,
+        slot.h,
+        targetX,
+        targetY
+      );
+      if (valid) {
+        setDraftOffsetX(valid.x);
+        setDraftOffsetY(valid.y);
+      }
     };
 
     const onUp = () => {

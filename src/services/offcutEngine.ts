@@ -163,6 +163,127 @@ function inheritParentCutouts(
 }
 
 /**
+ * Check whether a slot at the given offset overlaps any cutout of the piece.
+ * Used to validate placements and drags on pieces that aren't rectangles.
+ */
+export function isOffsetValid(
+  piece: Piece,
+  rotation: number,
+  slotW: number,
+  slotH: number,
+  offsetX: number,
+  offsetY: number
+): boolean {
+  const eff = getEffectiveDims(piece, rotation);
+  // Slot must fit within the piece bounding box
+  if (offsetX > 0.01 || offsetY > 0.01) return false;
+  if (offsetX < slotW - eff.w - 0.01) return false;
+  if (offsetY < slotH - eff.h - 0.01) return false;
+
+  // Rotate cutouts into the current rotated frame
+  const rotatedCutouts = piece.geometry.cutouts.map((c) =>
+    rotateRectInPiece(c, rotation, piece.width, piece.height)
+  );
+
+  const slotLeft = -offsetX;
+  const slotTop = -offsetY;
+  const slotRight = slotLeft + slotW;
+  const slotBottom = slotTop + slotH;
+
+  for (const c of rotatedCutouts) {
+    const cRight = c.x + c.w;
+    const cBottom = c.y + c.h;
+    // Overlap if slot and cutout intersect (using small epsilon to avoid edge-touching)
+    const overlaps =
+      slotRight > c.x + 0.01 &&
+      slotLeft < cRight - 0.01 &&
+      slotBottom > c.y + 0.01 &&
+      slotTop < cBottom - 0.01;
+    if (overlaps) return false;
+  }
+  return true;
+}
+
+/**
+ * Find the closest valid (offsetX, offsetY) to a preferred position such that
+ * the slot doesn't overlap any cutout. Returns null if no valid offset exists.
+ *
+ * For pieces without cutouts, just clamps to the valid range.
+ * For pieces with cutouts, searches candidate positions by snapping to cutout
+ * edges (which are the only places the valid region transitions).
+ */
+export function findValidOffset(
+  piece: Piece,
+  rotation: number,
+  slotW: number,
+  slotH: number,
+  preferredX: number = 0,
+  preferredY: number = 0
+): { x: number; y: number } | null {
+  const eff = getEffectiveDims(piece, rotation);
+  const minX = slotW - eff.w;
+  const minY = slotH - eff.h;
+
+  // Piece must be at least as large as the slot
+  if (minX > 0.01 || minY > 0.01) return null;
+
+  const clampedPx = Math.max(minX, Math.min(0, preferredX));
+  const clampedPy = Math.max(minY, Math.min(0, preferredY));
+
+  // Fast path: no cutouts → clamped preferred is valid
+  if (piece.geometry.cutouts.length === 0) {
+    return { x: clampedPx, y: clampedPy };
+  }
+
+  // Check if the preferred position itself is valid
+  if (isOffsetValid(piece, rotation, slotW, slotH, clampedPx, clampedPy)) {
+    return { x: clampedPx, y: clampedPy };
+  }
+
+  // Build candidate X and Y offsets by snapping to cutout edges.
+  // For each cutout: slot can avoid it by being entirely to the left, right,
+  // above, or below. The snap points are the cutout edges minus slot dims.
+  const rotatedCutouts = piece.geometry.cutouts.map((c) =>
+    rotateRectInPiece(c, rotation, piece.width, piece.height)
+  );
+
+  const xCandidates = new Set<number>([clampedPx, minX, 0]);
+  const yCandidates = new Set<number>([clampedPy, minY, 0]);
+  for (const c of rotatedCutouts) {
+    // Slot entirely to the right of cutout: -offsetX >= c.x + c.w → offsetX = -(c.x + c.w)
+    xCandidates.add(-(c.x + c.w));
+    // Slot entirely to the left of cutout: -offsetX + slotW <= c.x → offsetX = slotW - c.x
+    xCandidates.add(slotW - c.x);
+    yCandidates.add(-(c.y + c.h));
+    yCandidates.add(slotH - c.y);
+  }
+
+  // Filter to clamped range
+  const xs = Array.from(xCandidates)
+    .filter((x) => x >= minX - 0.01 && x <= 0.01)
+    .map((x) => Math.max(minX, Math.min(0, x)));
+  const ys = Array.from(yCandidates)
+    .filter((y) => y >= minY - 0.01 && y <= 0.01)
+    .map((y) => Math.max(minY, Math.min(0, y)));
+
+  // Try all combinations, keep the one closest to (preferredX, preferredY)
+  let best: { x: number; y: number; dist: number } | null = null;
+  for (const x of xs) {
+    for (const y of ys) {
+      if (!isOffsetValid(piece, rotation, slotW, slotH, x, y)) continue;
+      const dx = x - clampedPx;
+      const dy = y - clampedPy;
+      const dist = dx * dx + dy * dy;
+      if (!best || dist < best.dist) {
+        best = { x, y, dist };
+      }
+    }
+  }
+
+  return best ? { x: best.x, y: best.y } : null;
+}
+
+/**
  * Create the offcut piece when a piece is placed in a slot using continuous offsets.
  *
  * offsetX / offsetY: cm offset of piece's top-left from slot's top-left.

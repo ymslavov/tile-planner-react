@@ -11,6 +11,7 @@ import { PlacementControls } from './PlacementControls';
 import styles from './GridSlot.module.css';
 import { useStore } from '../../store';
 import { getEffectiveDims } from '../../services/pieceHelpers';
+import { findValidOffset } from '../../services/offcutEngine';
 import { preloadTileImage, createPieceDragImage } from '../../services/dragImage';
 
 interface GridSlotProps {
@@ -90,18 +91,28 @@ export function GridSlot({
       setIsDragging(true);
 
       const onMouseMove = (me: MouseEvent) => {
-        if (!dragStart.current) return;
+        if (!dragStart.current || !piece) return;
         const dxCm = (me.clientX - dragStart.current.mouseX) / scale;
         const dyCm = (me.clientY - dragStart.current.mouseY) / scale;
 
-        const minX = slot.w - eff.w;
-        const minY = slot.h - eff.h;
+        const targetX = dragStart.current.initOffsetX + dxCm;
+        const targetY = dragStart.current.initOffsetY + dyCm;
 
-        const newX = Math.min(0, Math.max(minX, dragStart.current.initOffsetX + dxCm));
-        const newY = Math.min(0, Math.max(minY, dragStart.current.initOffsetY + dyCm));
-
-        setDraftOffsetX(newX);
-        setDraftOffsetY(newY);
+        // Find the closest valid offset: clamped to piece bounds AND avoiding cutouts.
+        // For rectangular pieces this just clamps. For L/C/frame pieces, the drag
+        // snaps to positions that keep the slot entirely on material.
+        const valid = findValidOffset(
+          piece,
+          placement.rotation || 0,
+          slot.w,
+          slot.h,
+          targetX,
+          targetY
+        );
+        if (valid) {
+          setDraftOffsetX(valid.x);
+          setDraftOffsetY(valid.y);
+        }
       };
 
       const onMouseUp = () => {

@@ -14,6 +14,7 @@ import {
   createOffcuts,
   cascadeDelete,
   canPlacePiece,
+  findValidOffset,
 } from '../services/offcutEngine';
 import { computeGrid } from '../services/gridEngine';
 import {
@@ -351,18 +352,29 @@ export const useStore = create<Store>((set, get) => ({
       get().showToast(`Piece ${r.pieceId} removed from ${r.wallName}${surfaceLabel}`);
     }
 
+    // Find a valid initial offset — for pieces with cutouts (L/C/frame),
+    // this ensures the slot lands on material, not on a pre-existing cutout.
+    const pieceToPlace = newPieces[pieceId];
+    const validOffset = pieceToPlace
+      ? findValidOffset(pieceToPlace, 0, slot.w, slot.h, 0, 0)
+      : { x: 0, y: 0 };
+    if (!validOffset) {
+      get().showToast(`Piece ${pieceId} does not fit anywhere on the slot`);
+      return;
+    }
+
     // Place the piece
     const wIdx = newWalls.findIndex((w) => w.id === wallId);
     newWalls[wIdx] = {
       ...newWalls[wIdx],
       tiles: {
         ...newWalls[wIdx].tiles,
-        [slotKey]: { pieceId, rotation: 0, offsetX: 0, offsetY: 0 },
+        [slotKey]: { pieceId, rotation: 0, offsetX: validOffset.x, offsetY: validOffset.y },
       },
     };
 
     // Create offcuts
-    const offcutResult = createOffcuts(newPieces, pieceId, slot.w, slot.h, 0, 0, 0);
+    const offcutResult = createOffcuts(newPieces, pieceId, slot.w, slot.h, 0, validOffset.x, validOffset.y);
     newPieces = offcutResult.pieces;
 
     set({ pieces: newPieces, walls: newWalls });
@@ -605,10 +617,12 @@ export const useStore = create<Store>((set, get) => ({
     const slot = grid.slots.find((s) => s.row === row && s.col === col);
     if (!slot) return;
 
-    const eff = getEffectiveDims(piece, placement.rotation || 0);
-    // Clamp offsets to valid range: [slotW - effW, 0] for X, [slotH - effH, 0] for Y
-    const clampedX = Math.min(0, Math.max(slot.w - eff.w, offsetX));
-    const clampedY = Math.min(0, Math.max(slot.h - eff.h, offsetY));
+    // Find the closest valid offset that doesn't land on any of the piece's
+    // cutouts. For rectangular pieces, this is just the clamped offset.
+    const validOffset = findValidOffset(piece, placement.rotation || 0, slot.w, slot.h, offsetX, offsetY);
+    if (!validOffset) return;
+    const clampedX = validOffset.x;
+    const clampedY = validOffset.y;
 
     // Skip if offsets haven't changed
     const prevX = placement.offsetX ?? 0;
@@ -712,6 +726,17 @@ export const useStore = create<Store>((set, get) => ({
     const slotW = surfaceDims.w;
     const slotH = surfaceDims.h;
 
+    // Find a valid initial offset — for pieces with cutouts (L/C/frame),
+    // this ensures the slot lands on material, not on a pre-existing cutout.
+    const pieceToPlace = newPieces[pieceId];
+    const validOffset = pieceToPlace
+      ? findValidOffset(pieceToPlace, 0, slotW, slotH, 0, 0)
+      : { x: 0, y: 0 };
+    if (!validOffset) {
+      get().showToast(`Piece ${pieceId} does not fit on this niche surface`);
+      return;
+    }
+
     // Write the placement.
     const wIdx = newWalls.findIndex((w) => w.id === wallId);
     newWalls[wIdx] = {
@@ -720,14 +745,13 @@ export const useStore = create<Store>((set, get) => ({
         ...newWalls[wIdx].nicheTiles!,
         [surfaceKey]: {
           ...newWalls[wIdx].nicheTiles![surfaceKey],
-          [slotKey]: { pieceId, rotation: 0, offsetX: 0, offsetY: 0 },
+          [slotKey]: { pieceId, rotation: 0, offsetX: validOffset.x, offsetY: validOffset.y },
         },
       },
     };
 
-    // Create offcuts — a 60×120 tile dropped on a 45×45 niche back produces
-    // 3 offcut pieces (right strip, bottom strip, corner piece).
-    const offcutResult = createOffcuts(newPieces, pieceId, slotW, slotH, 0, 0, 0);
+    // Create offcuts for the placement
+    const offcutResult = createOffcuts(newPieces, pieceId, slotW, slotH, 0, validOffset.x, validOffset.y);
     newPieces = offcutResult.pieces;
 
     set({ pieces: newPieces, walls: newWalls });
@@ -857,13 +881,12 @@ export const useStore = create<Store>((set, get) => ({
     if (!piece) return;
 
     const surfaceDims = getNicheSurfaceDims(wall.niche, surfaceKey);
-    const eff = getEffectiveDims(piece, placement.rotation || 0);
 
-    // Clamp to valid range: piece must still fully cover the surface
-    const minX = surfaceDims.w - eff.w;
-    const minY = surfaceDims.h - eff.h;
-    const clampedX = Math.max(minX, Math.min(0, offsetX));
-    const clampedY = Math.max(minY, Math.min(0, offsetY));
+    // Find the closest valid offset that avoids any existing cutouts in the piece
+    const validOffset = findValidOffset(piece, placement.rotation || 0, surfaceDims.w, surfaceDims.h, offsetX, offsetY);
+    if (!validOffset) return;
+    const clampedX = validOffset.x;
+    const clampedY = validOffset.y;
 
     if (
       Math.abs(clampedX - (placement.offsetX ?? 0)) < 0.01 &&
