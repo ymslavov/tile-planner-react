@@ -6,21 +6,13 @@
   cursor: grab;
   background: #f0f0f0;
   flex-shrink: 0;
-  width: 50px;
+  /* width and height set via inline style from thumbWidth prop */
   transition: box-shadow 0.15s, transform 0.15s;
 }
 
 .tile:hover:not(.placed) {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
-}
-
-.portrait {
-  height: 100px;
-}
-
-.landscape {
-  height: 25px;
 }
 
 .placed {

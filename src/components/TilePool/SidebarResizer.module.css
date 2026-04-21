@@ -1,0 +1,27 @@
+.handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.handle:hover::after,
+.handle.active::after {
+  background: #c0c0c0;
+}

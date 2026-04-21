@@ -69,6 +69,9 @@ interface TilePlannerActions {
   doImportJSON: () => Promise<void>;
   clearAll: () => void;
 
+  // Sidebar
+  setSidebarWidth: (width: number) => void;
+
   // Toast
   showToast: (message: string) => void;
   removeToast: (id: string) => void;
@@ -89,6 +92,9 @@ interface TilePlannerActions {
 
 type Store = TilePlannerState & TilePlannerActions;
 
+const SIDEBAR_MIN = 180;
+const SIDEBAR_MAX = 400;
+
 const defaultState: TilePlannerState = {
   orientation: 'portrait',
   nicheMode: 'wrap-around',
@@ -96,6 +102,7 @@ const defaultState: TilePlannerState = {
   pieces: initPieces('portrait'),
   walls: JSON.parse(JSON.stringify(DEFAULT_WALLS)),
   toasts: [],
+  sidebarWidth: SIDEBAR_MIN,
   cascadePreview: null,
 };
 
@@ -112,6 +119,7 @@ export const useStore = create<Store>((set, get) => ({
         pieces: saved.pieces,
         walls: saved.walls,
         toasts: [],
+        sidebarWidth: saved.sidebarWidth ?? SIDEBAR_MIN,
       });
     }
     // Apply wrap-around after load
@@ -745,6 +753,7 @@ export const useStore = create<Store>((set, get) => ({
       pieces: state.pieces,
       walls: state.walls,
       toasts: [],
+      sidebarWidth: state.sidebarWidth,
     });
   },
 
@@ -805,6 +814,12 @@ export const useStore = create<Store>((set, get) => ({
     set({ cascadePreview: null });
   },
 
+  setSidebarWidth: (width) => {
+    const clamped = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, width));
+    set({ sidebarWidth: clamped });
+    get()._save();
+  },
+
   _save: () => {
     const state = get();
     persistState({
@@ -814,6 +829,7 @@ export const useStore = create<Store>((set, get) => ({
       pieces: state.pieces,
       walls: state.walls,
       toasts: [],
+      sidebarWidth: state.sidebarWidth,
     });
   },
 

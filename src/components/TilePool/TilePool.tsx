@@ -3,9 +3,15 @@ import { useStore } from '../../store';
 import { getPlacedPieceIds, getChildPieces } from '../../services/pieceHelpers';
 import { PoolTile } from './PoolTile';
 import { OffcutRow } from './OffcutRow';
+import { SidebarResizer } from './SidebarResizer';
 import { TILE_COUNT } from '../../constants';
 import styles from './TilePool.module.css';
 import type { DragData } from '../../store/types';
+
+// Padding inside the sidebar (left + right)
+const POOL_PADDING = 12;
+// Gap between the two PoolTile columns
+const TILE_GAP = 4;
 
 export function TilePool() {
   const pieces = useStore((s) => s.pieces);
@@ -14,10 +20,15 @@ export function TilePool() {
   const activeWallId = useStore((s) => s.activeWallId);
   const unplaceTile = useStore((s) => s.unplaceTile);
   const unplaceNicheTile = useStore((s) => s.unplaceNicheTile);
+  const sidebarWidth = useStore((s) => s.sidebarWidth);
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const placed = getPlacedPieceIds(walls);
+
+  // Compute proportional thumbnail width from sidebar width
+  const availableW = sidebarWidth - POOL_PADDING;
+  const thumbW = Math.max(36, Math.floor((availableW - TILE_GAP) / 2));
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -66,6 +77,7 @@ export function TilePool() {
             orientation={orientation}
             isPlaced={isPlaced}
             wallName={wall?.name}
+            thumbWidth={thumbW}
           />
           {hasChildren && (
             <button
@@ -73,7 +85,7 @@ export function TilePool() {
               onClick={() => toggleCollapsed(pieceId)}
               title={isCollapsed ? 'Expand offcuts' : 'Collapse offcuts'}
             >
-              {isCollapsed ? '\u25B6' : '\u25BC'}
+              {isCollapsed ? '▶' : '▼'}
             </button>
           )}
         </div>
@@ -94,7 +106,10 @@ export function TilePool() {
   }
 
   return (
-    <div className={styles.panel}>
+    <div
+      className={styles.panel}
+      style={{ width: sidebarWidth, minWidth: sidebarWidth }}
+    >
       <div className={styles.header}>Available Tiles</div>
       <div
         className={styles.pool}
@@ -103,6 +118,7 @@ export function TilePool() {
       >
         {families}
       </div>
+      <SidebarResizer />
     </div>
   );
 }

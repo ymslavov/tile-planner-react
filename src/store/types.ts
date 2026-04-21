@@ -138,6 +138,7 @@ export interface TilePlannerState {
   pieces: Record<string, Piece>;
   walls: Wall[];
   toasts: Toast[];
+  sidebarWidth: number;
   /** Runtime-only. Not persisted to localStorage. */
   cascadePreview?: CascadePreview | null;
 }
