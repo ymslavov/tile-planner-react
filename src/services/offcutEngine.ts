@@ -71,6 +71,98 @@ export function computeOffcutImageRegion(
 }
 
 /**
+ * Rotate a rectangle from the parent's natural (rotation=0) piece-local
+ * coordinate system into a rotated coordinate system. Used when the parent's
+ * cutouts (stored in its natural frame) need to be expressed in the rotated
+ * frame used for offcut geometry.
+ *
+ * Input: rect in parent's natural coords [0, parent.width] × [0, parent.height]
+ * Output: rect in parent's rotated coords [0, effW] × [0, effH]
+ */
+function rotateRectInPiece(
+  rect: { x: number; y: number; w: number; h: number },
+  rotation: number,
+  parentW: number,
+  parentH: number
+): { x: number; y: number; w: number; h: number } {
+  switch (rotation) {
+    case 0:
+      return rect;
+    case 90:
+      // 90° CW: (x, y) → (parentH - y - h, x), and w/h swap
+      return {
+        x: parentH - rect.y - rect.h,
+        y: rect.x,
+        w: rect.h,
+        h: rect.w,
+      };
+    case 180:
+      return {
+        x: parentW - rect.x - rect.w,
+        y: parentH - rect.y - rect.h,
+        w: rect.w,
+        h: rect.h,
+      };
+    case 270:
+      // 270° CW (= 90° CCW): (x, y) → (y, parentW - x - w), and w/h swap
+      return {
+        x: rect.y,
+        y: parentW - rect.x - rect.w,
+        w: rect.h,
+        h: rect.w,
+      };
+    default:
+      return rect;
+  }
+}
+
+/**
+ * Clip a rectangle to a bounding box and translate to bbox-local coords.
+ * Returns null if there's no overlap.
+ */
+function clipRectToBbox(
+  rect: { x: number; y: number; w: number; h: number },
+  bbX: number,
+  bbY: number,
+  bbW: number,
+  bbH: number
+): { x: number; y: number; w: number; h: number } | null {
+  const x1 = Math.max(rect.x, bbX);
+  const y1 = Math.max(rect.y, bbY);
+  const x2 = Math.min(rect.x + rect.w, bbX + bbW);
+  const y2 = Math.min(rect.y + rect.h, bbY + bbH);
+  if (x2 - x1 < 0.01 || y2 - y1 < 0.01) return null;
+  return { x: x1 - bbX, y: y1 - bbY, w: x2 - x1, h: y2 - y1 };
+}
+
+/**
+ * Given the parent's cutouts and the offcut bounding box (in parent's rotated
+ * frame), produce the cutout list for the offcut, translated to offcut-local
+ * coords and clipped to the offcut bbox.
+ *
+ * Input rects are in parent.rotated frame [0, effW]×[0, effH].
+ * Output rects are in offcut-local frame [0, bbW]×[0, bbH].
+ */
+function inheritParentCutouts(
+  parent: Piece,
+  rotation: number,
+  bbX: number,
+  bbY: number,
+  bbW: number,
+  bbH: number
+): { x: number; y: number; w: number; h: number }[] {
+  const result: { x: number; y: number; w: number; h: number }[] = [];
+  for (const c of parent.geometry.cutouts) {
+    // Parent's cutouts are stored in parent's natural (rotation=0) frame.
+    // Rotate them into the rotated frame to align with bbX/bbY/bbW/bbH.
+    const rotated = rotateRectInPiece(c, rotation, parent.width, parent.height);
+    const clipped = clipRectToBbox(rotated, bbX, bbY, bbW, bbH);
+    if (clipped) result.push(clipped);
+  }
+  return result;
+}
+
+/**
  * Create the offcut piece when a piece is placed in a slot using continuous offsets.
  *
  * offsetX / offsetY: cm offset of piece's top-left from slot's top-left.
@@ -134,29 +226,29 @@ export function createOffcuts(
 
   // Special case 1: slot spans full width but middle of height → 2 disconnected strips
   if (spansFullWidth && slotY > 0.01 && slotEndY < eff.h - 0.01) {
-    // Top strip: (0, 0, eff.w, slotY)
     const topId = generateOffcutId(pieceId, 0);
+    const topCutouts = inheritParentCutouts(piece, rotation, 0, 0, eff.w, slotY);
     const top: Piece = {
       id: topId,
       sourceTileId: piece.sourceTileId,
       parentId: pieceId,
       width: eff.w,
       height: slotY,
-      geometry: { boundingBox: { w: eff.w, h: slotY }, cutouts: [] },
+      geometry: { boundingBox: { w: eff.w, h: slotY }, cutouts: topCutouts },
       imageRegion: computeOffcutImageRegion(piece, rotation, 0, 0, eff.w, slotY),
     };
     newPieces[topId] = top;
     offcuts.push(top);
 
-    // Bottom strip: (0, slotEndY, eff.w, eff.h - slotEndY)
     const bottomId = generateOffcutId(pieceId, 1);
+    const bottomCutouts = inheritParentCutouts(piece, rotation, 0, slotEndY, eff.w, eff.h - slotEndY);
     const bottom: Piece = {
       id: bottomId,
       sourceTileId: piece.sourceTileId,
       parentId: pieceId,
       width: eff.w,
       height: eff.h - slotEndY,
-      geometry: { boundingBox: { w: eff.w, h: eff.h - slotEndY }, cutouts: [] },
+      geometry: { boundingBox: { w: eff.w, h: eff.h - slotEndY }, cutouts: bottomCutouts },
       imageRegion: computeOffcutImageRegion(piece, rotation, 0, slotEndY, eff.w, eff.h - slotEndY),
     };
     newPieces[bottomId] = bottom;
@@ -167,26 +259,28 @@ export function createOffcuts(
   // Special case 2: slot spans full height but middle of width → 2 disconnected strips
   if (spansFullHeight && slotX > 0.01 && slotEndX < eff.w - 0.01) {
     const leftId = generateOffcutId(pieceId, 0);
+    const leftCutouts = inheritParentCutouts(piece, rotation, 0, 0, slotX, eff.h);
     const left: Piece = {
       id: leftId,
       sourceTileId: piece.sourceTileId,
       parentId: pieceId,
       width: slotX,
       height: eff.h,
-      geometry: { boundingBox: { w: slotX, h: eff.h }, cutouts: [] },
+      geometry: { boundingBox: { w: slotX, h: eff.h }, cutouts: leftCutouts },
       imageRegion: computeOffcutImageRegion(piece, rotation, 0, 0, slotX, eff.h),
     };
     newPieces[leftId] = left;
     offcuts.push(left);
 
     const rightId = generateOffcutId(pieceId, 1);
+    const rightCutouts = inheritParentCutouts(piece, rotation, slotEndX, 0, eff.w - slotEndX, eff.h);
     const right: Piece = {
       id: rightId,
       sourceTileId: piece.sourceTileId,
       parentId: pieceId,
       width: eff.w - slotEndX,
       height: eff.h,
-      geometry: { boundingBox: { w: eff.w - slotEndX, h: eff.h }, cutouts: [] },
+      geometry: { boundingBox: { w: eff.w - slotEndX, h: eff.h }, cutouts: rightCutouts },
       imageRegion: computeOffcutImageRegion(piece, rotation, slotEndX, 0, eff.w - slotEndX, eff.h),
     };
     newPieces[rightId] = right;
@@ -221,13 +315,15 @@ export function createOffcuts(
   const bbW = bbMaxX - bbX;
   const bbH = bbMaxY - bbY;
 
-  // Cutout position within the offcut's local coords
+  // Start with inherited cutouts from the parent piece, translated and clipped
+  // to the offcut's bounding box. These represent regions that already didn't
+  // physically exist in the parent (e.g. an L-shape parent has a corner cutout).
+  const cutouts: { x: number; y: number; w: number; h: number }[] =
+    inheritParentCutouts(piece, rotation, bbX, bbY, bbW, bbH);
+
+  // Add the new cutout for the slot-covered region within the offcut bbox
   const cutoutX = slotX - bbX;
   const cutoutY = slotY - bbY;
-  const cutouts: { x: number; y: number; w: number; h: number }[] = [];
-
-  // Only add a cutout if the slot actually overlaps the offcut bounding box
-  // AND the cutout doesn't cover the entire bounding box.
   const cutoutWithinBbox =
     cutoutX < bbW - 0.01 &&
     cutoutY < bbH - 0.01 &&
@@ -239,7 +335,6 @@ export function createOffcuts(
     const cw = Math.min(bbW - cx, slotUsedW + Math.min(0, cutoutX));
     const ch = Math.min(bbH - cy, slotUsedH + Math.min(0, cutoutY));
     if (cw > 0.01 && ch > 0.01 && !(cw >= bbW - 0.01 && ch >= bbH - 0.01)) {
-      // Don't add a cutout that's flush with all 4 edges (= empty offcut)
       cutouts.push({ x: cx, y: cy, w: cw, h: ch });
     }
   }
