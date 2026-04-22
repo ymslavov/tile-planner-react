@@ -9,6 +9,14 @@ interface NicheSurfacesProps {
   nicheMode: NicheMode;
 }
 
+/**
+ * Renders the 5 niche inner surfaces (back + 4 lips) below the wall grid.
+ *
+ * - **Independent mode**: all 5 surfaces are editable drop targets.
+ * - **Wrap-around mode**: only the back is editable; the 4 lip surfaces are
+ *   read-only — they display auto-generated strip pieces produced from the
+ *   wall-face tiles that intersect the niche edges.
+ */
 export function NicheSurfaces({
   wall,
   pieces,
@@ -17,90 +25,49 @@ export function NicheSurfaces({
 }: NicheSurfacesProps) {
   if (!wall.niche) return null;
 
-  if (nicheMode === 'wrap-around') {
-    // Wrap-around: show niche back (droppable) + read-only lip info
-    return (
-      <div className={styles.container}>
-        <div className={styles.heading}>
-          Niche Surfaces — Wrap-Around Mode
-        </div>
-
-        {/* Back surface: droppable */}
-        <div className={styles.surface}>
-          <h4 className={styles.surfaceTitle}>
-            Niche Back ({wall.niche.width}&times;{wall.niche.height} cm)
-          </h4>
-          <SurfaceGrid
-            surfaceKey="back"
-            surfaceW={wall.niche.width}
-            surfaceH={wall.niche.height}
-            tiles={(wall.nicheTiles && wall.nicheTiles.back) || {}}
-            pieces={pieces}
-            orientation={orientation}
-            wallId={wall.id}
-          />
-        </div>
-
-        {/* Lip surfaces: read-only info */}
-        <div className={styles.lipInfo}>
-          <strong>Lip surfaces (auto-populated from wall cuts):</strong>
-          <br />
-          {(['left', 'right', 'top', 'bottom'] as NicheSurfaceKey[]).map((lip) => {
-            const tiles = (wall.nicheTiles && wall.nicheTiles[lip]) || {};
-            const count = Object.keys(tiles).length;
-            const tileList =
-              count > 0
-                ? Object.values(tiles)
-                    .map((p) => {
-                      const lp = pieces[p.pieceId];
-                      return `#${lp ? lp.sourceTileId : p.pieceId}`;
-                    })
-                    .join(', ')
-                : 'none';
-            return (
-              <span key={lip} className={styles.lipItem}>
-                {lip.charAt(0).toUpperCase() + lip.slice(1)} Lip:{' '}
-                <strong>{tileList}</strong>
-              </span>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  // Independent mode: show all 5 surfaces as droppable grids
   const surfaces: {
     key: NicheSurfaceKey;
     label: string;
     w: number;
     h: number;
   }[] = [
-    { key: 'back', label: 'Niche Back', w: wall.niche.width, h: wall.niche.height },
-    { key: 'left', label: 'Niche Left', w: wall.niche.depth, h: wall.niche.height },
-    { key: 'right', label: 'Niche Right', w: wall.niche.depth, h: wall.niche.height },
-    { key: 'top', label: 'Niche Top', w: wall.niche.width, h: wall.niche.depth },
-    { key: 'bottom', label: 'Niche Bottom', w: wall.niche.width, h: wall.niche.depth },
+    { key: 'back',   label: 'Niche Back',   w: wall.niche.width, h: wall.niche.height },
+    { key: 'left',   label: 'Niche Left',   w: wall.niche.depth, h: wall.niche.height },
+    { key: 'right',  label: 'Niche Right',  w: wall.niche.depth, h: wall.niche.height },
+    { key: 'top',    label: 'Niche Top',    w: wall.niche.width, h: wall.niche.depth  },
+    { key: 'bottom', label: 'Niche Bottom', w: wall.niche.width, h: wall.niche.depth  },
   ];
+
+  const isLipReadOnly = nicheMode === 'wrap-around';
 
   return (
     <div className={styles.container}>
-      {surfaces.map((surface) => (
-        <div key={surface.key} className={styles.surface}>
-          <h4 className={styles.surfaceTitle}>
-            {surface.label} ({surface.w}&times;{surface.h} cm)
-          </h4>
-          <SurfaceGrid
-            surfaceKey={surface.key}
-            surfaceW={surface.w}
-            surfaceH={surface.h}
-            tiles={(wall.nicheTiles && wall.nicheTiles[surface.key]) || {}}
-            pieces={pieces}
-            orientation={orientation}
-            wallId={wall.id}
-          />
+      {nicheMode === 'wrap-around' && (
+        <div className={styles.heading}>
+          Niche Surfaces — Wrap-Around Mode (lip surfaces auto-populated from wall cuts)
         </div>
-      ))}
+      )}
+      {surfaces.map((surface) => {
+        const readOnly = surface.key !== 'back' && isLipReadOnly;
+        return (
+          <div key={surface.key} className={styles.surface}>
+            <h4 className={styles.surfaceTitle}>
+              {surface.label} ({surface.w}&times;{surface.h} cm)
+              {readOnly && <span className={styles.autoTag}> auto</span>}
+            </h4>
+            <SurfaceGrid
+              surfaceKey={surface.key}
+              surfaceW={surface.w}
+              surfaceH={surface.h}
+              tiles={(wall.nicheTiles && wall.nicheTiles[surface.key]) || {}}
+              pieces={pieces}
+              orientation={orientation}
+              wallId={wall.id}
+              readOnly={readOnly}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

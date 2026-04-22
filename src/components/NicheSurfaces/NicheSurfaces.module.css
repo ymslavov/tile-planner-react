@@ -26,6 +26,18 @@
   font-weight: 600;
 }
 
+.autoTag {
+  font-size: 9px;
+  font-weight: 500;
+  color: #6366f1;
+  background: #eef2ff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 .surfaceGrid {
   background: #fafafa;
   border: 1px solid #e0e0e0;

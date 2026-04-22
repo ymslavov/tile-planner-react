@@ -231,12 +231,19 @@ function SlotCell({
       onDragStart={placement && !readOnly ? handleDragStart : undefined}
       onDragEnd={handleDragEnd}
     >
-      {placement && tileId && (
+      {placement && tileId && piece && (
         <>
+          {/* Piece container: positioned within the slot at (offsetX, offsetY),
+              sized to the piece's own dimensions. For pieces smaller than the
+              slot (e.g., auto-wrap lip strips), only the piece's region is
+              covered — the rest of the slot remains empty/background. */}
           <div
             style={{
               position: 'absolute',
-              inset: 0,
+              left: `${effOffsetX * surfaceScale}px`,
+              top: `${effOffsetY * surfaceScale}px`,
+              width: `${piece.width * surfaceScale}px`,
+              height: `${piece.height * surfaceScale}px`,
               overflow: 'hidden',
             }}
           >
@@ -247,35 +254,35 @@ function SlotCell({
               draggable={false}
               style={{
                 position: 'absolute',
-                left: `${(effOffsetX - ir.x) * surfaceScale}px`,
-                top: `${(effOffsetY - ir.y) * surfaceScale}px`,
+                left: `${-ir.x * surfaceScale}px`,
+                top: `${-ir.y * surfaceScale}px`,
                 width: `${60 * surfaceScale}px`,
                 height: `${120 * surfaceScale}px`,
-                cursor: placement && piece && (getEffectiveDims(piece, rot).w > slot.w + 0.01 || getEffectiveDims(piece, rot).h > slot.h + 0.01) ? 'grab' : 'default',
+                cursor: getEffectiveDims(piece, rot).w > slot.w + 0.01 || getEffectiveDims(piece, rot).h > slot.h + 0.01 ? 'grab' : 'default',
                 ...rotCss,
               }}
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
-            <span
-              style={{
-                position: 'absolute',
-                bottom: '1px',
-                right: '2px',
-                fontSize: '8px',
-                color: '#fff',
-                background: 'rgba(0,0,0,0.45)',
-                padding: '0 2px',
-                borderRadius: '2px',
-                lineHeight: '1.4',
-                pointerEvents: 'none',
-                zIndex: 3,
-              }}
-            >
-              {tileId}
-            </span>
           </div>
+          <span
+            style={{
+              position: 'absolute',
+              bottom: '1px',
+              right: '2px',
+              fontSize: '8px',
+              color: '#fff',
+              background: 'rgba(0,0,0,0.45)',
+              padding: '0 2px',
+              borderRadius: '2px',
+              lineHeight: '1.4',
+              pointerEvents: 'none',
+              zIndex: 3,
+            }}
+          >
+            {tileId}
+          </span>
           {!readOnly && (
             <div className="niche-btn-bar">
               <button
