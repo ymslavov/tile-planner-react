@@ -1,38 +1,225 @@
+/* Multi-page printable cut sheet — A4 portrait by default */
+
 .cutSheet {
-  padding: 20mm;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #000;
 }
 
-.summary {
-  margin-bottom: 20px;
+/* Each page is its own section that print-paginates cleanly */
+.page {
+  padding: 18mm 16mm;
+  page-break-after: always;
+  page-break-inside: avoid;
+  min-height: 250mm;
+  box-sizing: border-box;
 }
 
-.summary h1 {
-  font-size: 20px;
-  margin: 0 0 8px 0;
+.page:last-child {
+  page-break-after: auto;
 }
+
+.pageTitle {
+  font-size: 22px;
+  margin: 0 0 6px 0;
+}
+
+.pageMeta {
+  font-size: 12px;
+  color: #555;
+  margin: 0 0 16px 0;
+}
+
+/* ── Cover page ────────────────────────────────────────────────── */
+
+.coverPage {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 230mm;
+}
+
+.coverTitle {
+  font-size: 36px;
+  margin: 0 0 30px 0;
+}
+
+.coverInfo {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333;
+}
+
+.coverInfo p {
+  margin: 4px 0;
+}
+
+/* ── Wall preview page ─────────────────────────────────────────── */
+
+.wallPreviewLayout {
+  display: flex;
+  gap: 8mm;
+  align-items: flex-start;
+}
+
+.wallVisual {
+  position: relative;
+  background: #f8f8f8;
+  border: 0.4mm solid #444;
+  flex-shrink: 0;
+}
+
+.placedPiece {
+  position: absolute;
+  border: 0.2mm solid rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+.elementBadge {
+  position: absolute;
+  top: 1mm;
+  left: 1mm;
+  background: #fff;
+  border: 0.2mm solid #2563eb;
+  color: #2563eb;
+  font-size: 9pt;
+  font-weight: 700;
+  padding: 0.3mm 1.5mm;
+  border-radius: 1mm;
+  line-height: 1;
+  min-width: 4mm;
+  text-align: center;
+}
+
+.nicheOutline {
+  position: absolute;
+  border: 0.4mm dashed #2563eb;
+  background: rgba(37, 99, 235, 0.05);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.wallLegend {
+  flex: 1;
+  font-size: 10pt;
+}
+
+.wallLegend h3 {
+  font-size: 12pt;
+  margin: 0 0 6mm 0;
+}
+
+.legendRow {
+  display: flex;
+  gap: 2mm;
+  align-items: flex-start;
+  padding: 1.5mm 0;
+  border-bottom: 0.1mm solid #ddd;
+}
+
+.legendNum {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.5mm 2mm;
+  border-radius: 1mm;
+  font-size: 10pt;
+  min-width: 6mm;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.legendInfo {
+  flex: 1;
+}
+
+.legendId {
+  font-weight: 600;
+  font-size: 10pt;
+}
+
+.legendDims {
+  color: #555;
+  font-size: 9pt;
+}
+
+.legendSource {
+  color: #888;
+  font-size: 8pt;
+}
+
+.empty {
+  color: #888;
+  font-size: 10pt;
+}
+
+/* ── Niche page ────────────────────────────────────────────────── */
+
+.nicheLayout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8mm;
+  align-items: flex-start;
+  margin-bottom: 8mm;
+}
+
+.nicheSurfaceCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.nicheSurfaceLabel {
+  font-size: 10pt;
+  color: #444;
+  margin: 0 0 1.5mm 0;
+  font-weight: 600;
+}
+
+.nicheSurfaceVisual {
+  position: relative;
+  background: #f8f8f8;
+  border: 0.4mm dashed #f59e0b;
+  box-sizing: border-box;
+}
+
+.nicheLegend {
+  border-top: 0.2mm solid #ccc;
+  padding-top: 4mm;
+}
+
+.nicheLegend h3 {
+  font-size: 12pt;
+  margin: 0 0 3mm 0;
+}
+
+/* ── Per-tile cut section ──────────────────────────────────────── */
 
 .tileSection {
   display: flex;
-  gap: 24px;
+  gap: 8mm;
   page-break-inside: avoid;
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #ddd;
+  margin-bottom: 6mm;
+  padding-bottom: 4mm;
+  border-bottom: 0.1mm solid #ddd;
+}
+
+.tileSectionTitle {
+  font-size: 11pt;
+  margin: 0 0 2mm 0;
 }
 
 .visual {
-  width: 260px;
+  width: 80mm;
   flex-shrink: 0;
 }
 
 .imgContainer {
   position: relative;
-  width: 200px;
-  height: 400px;
-  border: 2px solid #333;
-  border-radius: 4px;
+  width: 60mm;
+  height: 120mm;
+  border: 0.4mm solid #333;
   overflow: hidden;
 }
 
@@ -53,53 +240,80 @@
 
 .descriptions {
   flex: 1;
+  font-size: 9pt;
 }
 
 .chainTitle {
-  margin: 0 0 12px 0;
-  font-size: 16px;
+  margin: 0 0 3mm 0;
+  font-size: 12pt;
 }
 
 .pieceDesc {
   background: #f8f8f8;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 8px;
-  margin-bottom: 8px;
+  border: 0.1mm solid #e0e0e0;
+  border-radius: 1mm;
+  padding: 2mm;
+  margin-bottom: 1.5mm;
 }
 
 .pieceHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 2mm;
+  margin-bottom: 1mm;
+}
+
+.elementBadgeInline {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.3mm 1.5mm;
+  border-radius: 1mm;
+  font-size: 9pt;
+  min-width: 5mm;
+  text-align: center;
 }
 
 .pieceBadge {
-  background: #2563eb;
+  background: #6366f1;
   color: #fff;
-  padding: 2px 8px;
-  border-radius: 3px;
+  padding: 0.3mm 2mm;
+  border-radius: 1mm;
   font-weight: bold;
-  font-size: 12px;
+  font-size: 9pt;
 }
 
 .pieceDims {
   font-weight: 600;
+  font-size: 9pt;
 }
 
 .pieceInfo {
-  margin: 2px 0;
+  margin: 1mm 0 0 0;
   color: #555;
-  font-size: 12px;
+  font-size: 8.5pt;
+  line-height: 1.4;
 }
 
 .waste {
-  margin-top: 8px;
+  margin-top: 2mm;
   background: #fffbeb;
-  border: 1px solid #f59e0b;
-  border-radius: 4px;
-  padding: 6px;
-  font-size: 11px;
+  border: 0.1mm solid #f59e0b;
+  border-radius: 1mm;
+  padding: 1.5mm;
+  font-size: 8pt;
   color: #92400e;
+}
+
+/* ── Print-specific ───────────────────────────────────────────── */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  .cutSheet {
+    background: #fff;
+  }
 }
