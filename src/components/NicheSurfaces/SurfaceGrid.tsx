@@ -233,38 +233,49 @@ function SlotCell({
     >
       {placement && tileId && piece && (
         <>
-          {/* Piece container: positioned within the slot at (offsetX, offsetY),
-              sized to the piece's own dimensions. For pieces smaller than the
-              slot (e.g., auto-wrap lip strips), only the piece's region is
-              covered — the rest of the slot remains empty/background. */}
+          {/* Outer slot-sized clip — ensures the piece never overflows the
+              slot boundaries (matches the wall's .imageClip pattern). */}
           <div
             style={{
               position: 'absolute',
-              left: `${effOffsetX * surfaceScale}px`,
-              top: `${effOffsetY * surfaceScale}px`,
-              width: `${piece.width * surfaceScale}px`,
-              height: `${piece.height * surfaceScale}px`,
+              inset: 0,
               overflow: 'hidden',
             }}
           >
-            <img
-              src={tileImageUrl(tileId)}
-              alt={`Tile ${tileId}`}
-              onMouseDown={handleImageMouseDown}
-              draggable={false}
+            {/* Piece container: positioned within the slot at (offsetX, offsetY),
+                sized to the piece's own dimensions. For pieces smaller than the
+                slot (e.g., auto-wrap lip strips), only the piece's region is
+                covered — the rest of the slot remains empty. For pieces larger
+                than the slot (typical case), the outer clip crops the overflow. */}
+            <div
               style={{
                 position: 'absolute',
-                left: `${-ir.x * surfaceScale}px`,
-                top: `${-ir.y * surfaceScale}px`,
-                width: `${60 * surfaceScale}px`,
-                height: `${120 * surfaceScale}px`,
-                cursor: getEffectiveDims(piece, rot).w > slot.w + 0.01 || getEffectiveDims(piece, rot).h > slot.h + 0.01 ? 'grab' : 'default',
-                ...rotCss,
+                left: `${effOffsetX * surfaceScale}px`,
+                top: `${effOffsetY * surfaceScale}px`,
+                width: `${piece.width * surfaceScale}px`,
+                height: `${piece.height * surfaceScale}px`,
+                overflow: 'hidden',
               }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
+            >
+              <img
+                src={tileImageUrl(tileId)}
+                alt={`Tile ${tileId}`}
+                onMouseDown={handleImageMouseDown}
+                draggable={false}
+                style={{
+                  position: 'absolute',
+                  left: `${-ir.x * surfaceScale}px`,
+                  top: `${-ir.y * surfaceScale}px`,
+                  width: `${60 * surfaceScale}px`,
+                  height: `${120 * surfaceScale}px`,
+                  cursor: getEffectiveDims(piece, rot).w > slot.w + 0.01 || getEffectiveDims(piece, rot).h > slot.h + 0.01 ? 'grab' : 'default',
+                  ...rotCss,
+                }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
           </div>
           <span
             style={{
