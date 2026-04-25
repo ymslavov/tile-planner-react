@@ -7,7 +7,7 @@ import {
 } from '../../services/pieceHelpers';
 import type { Orientation } from '../../store/types';
 import { tileImageUrl } from '../../constants';
-import { pieceCentroidInTile, type ElementEntry } from '../../services/printData';
+import { placedPieceCentroidInTile, type ElementEntry } from '../../services/printData';
 import { t } from './i18n';
 import styles from './CutSheet.module.css';
 
@@ -40,11 +40,11 @@ export function CutTileSection({
   const th = getTileH(orientation);
   const rootId = String(tileNumber);
 
-  // Build a map of pieceId → element number (for any pieces that are placed)
-  const elemByPieceId = new Map<string, number>();
+  // Build a map of pieceId → element entry (for any pieces that are placed)
+  const elemByPieceId = new Map<string, ElementEntry>();
   for (const e of elements) {
     if (e.piece.sourceTileId === tileNumber) {
-      elemByPieceId.set(e.pieceId, e.num);
+      elemByPieceId.set(e.pieceId, e);
     }
   }
 
@@ -69,7 +69,7 @@ export function CutTileSection({
         w: cr.w,
         h: cr.h,
         pieceId: child.id,
-        elementNum: elemByPieceId.get(child.id) ?? null,
+        elementNum: elemByPieceId.get(child.id)?.num ?? null,
       });
     }
   }
@@ -93,15 +93,24 @@ export function CutTileSection({
     labelY: number;    // label y (in column)
   };
 
-  // Step 1: compute centroids and sort labels by Y (top to bottom)
-  const labelsToPlace = cuts
-    .filter((c) => c.elementNum !== null)
-    .map((c) => {
-      const child = pieces[c.pieceId];
-      const centroid = pieceCentroidInTile(child);
+  // Step 1: compute centroids and sort labels by Y (top to bottom).
+  // We label EVERY placed piece sourced from this tile (including the root
+  // piece "N" itself, which doesn't appear in the children-of iteration but
+  // does occupy a region in the tile). The centroid points at the part of
+  // the tile actually used for that placement, so nested offcuts don't all
+  // stack on the same dot.
+  const labelsToPlace = elements
+    .filter((e) => e.piece.sourceTileId === tileNumber)
+    .map((e) => {
+      const centroid = placedPieceCentroidInTile(
+        e.piece,
+        e.placement,
+        e.slotW,
+        e.slotH
+      );
       return {
-        pieceId: c.pieceId,
-        num: c.elementNum!,
+        pieceId: e.pieceId,
+        num: e.num,
         cx: centroid.x,
         cy: centroid.y,
       };
@@ -226,7 +235,7 @@ export function CutTileSection({
               ? pl!.wall.nicheTiles![pl!.surface][pl!.key]
               : pl!.wall.tiles[pl!.key]
             : null;
-          const elemNum = elemByPieceId.get(piece.id);
+          const elemNum = elemByPieceId.get(piece.id)?.num;
 
           return (
             <div key={piece.id} className={styles.pieceDesc}>

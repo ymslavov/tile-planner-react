@@ -21,6 +21,8 @@ export interface ElementEntry {
   surface: NicheSurfaceKey | null;
   slotKey: string;
   placement: Placement;
+  slotW: number;
+  slotH: number;
 }
 
 /**
@@ -29,16 +31,22 @@ export interface ElementEntry {
  */
 export function buildElementList(
   walls: Wall[],
-  pieces: Record<string, Piece>
+  pieces: Record<string, Piece>,
+  orientation: Orientation
 ): ElementEntry[] {
   const result: ElementEntry[] = [];
   let num = 1;
 
   for (const wall of walls) {
+    const wallGrid = computeGrid(wall, orientation);
+
     // Wall-face placements
     for (const [slotKey, placement] of Object.entries(wall.tiles)) {
       const piece = pieces[placement.pieceId];
       if (!piece) continue;
+      const [r, c] = slotKey.split(',').map(Number);
+      const slot = wallGrid.slots.find((s) => s.row === r && s.col === c);
+      if (!slot) continue;
       result.push({
         num: num++,
         pieceId: placement.pieceId,
@@ -47,17 +55,34 @@ export function buildElementList(
         surface: null,
         slotKey,
         placement,
+        slotW: slot.w,
+        slotH: slot.h,
       });
     }
 
-    // Niche surface placements (skip auto-wrap pieces — they're computed)
-    if (wall.nicheTiles) {
+    // Niche surface placements
+    if (wall.nicheTiles && wall.niche) {
+      const surfaceDims: Record<NicheSurfaceKey, { w: number; h: number }> = {
+        back: { w: wall.niche.width, h: wall.niche.height },
+        left: { w: wall.niche.depth, h: wall.niche.height },
+        right: { w: wall.niche.depth, h: wall.niche.height },
+        top: { w: wall.niche.width, h: wall.niche.depth },
+        bottom: { w: wall.niche.width, h: wall.niche.depth },
+      };
       const surfaces: NicheSurfaceKey[] = ['back', 'left', 'right', 'top', 'bottom'];
       for (const surface of surfaces) {
         const tiles = wall.nicheTiles[surface] || {};
+        const dims = surfaceDims[surface];
+        const surfaceGrid = computeGrid(
+          { width: dims.w, height: dims.h, remainderH: 'split', remainderV: 'split' },
+          orientation
+        );
         for (const [slotKey, placement] of Object.entries(tiles)) {
           const piece = pieces[placement.pieceId];
           if (!piece) continue;
+          const [r, c] = slotKey.split(',').map(Number);
+          const slot = surfaceGrid.slots.find((s) => s.row === r && s.col === c);
+          if (!slot) continue;
           result.push({
             num: num++,
             pieceId: placement.pieceId,
@@ -66,6 +91,8 @@ export function buildElementList(
             surface,
             slotKey,
             placement,
+            slotW: slot.w,
+            slotH: slot.h,
           });
         }
       }
@@ -134,42 +161,39 @@ export function computeWallPlacements(
 }
 
 /**
- * Compute centroid in original-tile-image coords for a child piece (used for
- * positioning element-number labels on the cut sheet's tile image).
+ * Compute the centroid (in original-tile-image coords) of the part of a placed
+ * piece that's actually visible in its slot. When a piece is placed in a slot
+ * smaller than the piece itself, only a sub-rectangle of the piece is used;
+ * the leader-line dot must point to that sub-rectangle, not the piece's
+ * full bounding box, so nested offcuts don't all cluster at the same dot.
+ *
+ * Rotation handling: only rotation 0 is treated explicitly. For other
+ * rotations the formula falls back to the unrotated rectangle, which is a
+ * reasonable visual approximation for marble tiles.
  */
-export function pieceCentroidInTile(
-  piece: Piece
+export function placedPieceCentroidInTile(
+  piece: Piece,
+  placement: Placement,
+  slotW: number,
+  slotH: number
 ): { x: number; y: number } {
   const ir = piece.imageRegion;
-  // For shaped pieces (with cutouts), the centroid is approximate — use the
-  // bounding-box center, then nudge away from any cutout. For simple rect,
-  // bbox center works fine.
-  const cx = ir.x + ir.w / 2;
-  const cy = ir.y + ir.h / 2;
+  const offX = placement.offsetX ?? 0;
+  const offY = placement.offsetY ?? 0;
 
-  // If there's a cutout that contains the centroid, shift toward the largest
-  // non-cutout sub-rectangle.
-  for (const c of piece.geometry.cutouts) {
-    const cuLeft = ir.x + c.x;
-    const cuTop = ir.y + c.y;
-    const cuRight = cuLeft + c.w;
-    const cuBottom = cuTop + c.h;
-    if (cx >= cuLeft && cx <= cuRight && cy >= cuTop && cy <= cuBottom) {
-      // Centroid is inside the cutout — pick a quadrant of the bounding box
-      // that's outside the cutout. Try right-of-cutout, then below.
-      if (ir.x + ir.w - cuRight > cuLeft - ir.x) {
-        // more space to the right
-        return { x: (cuRight + ir.x + ir.w) / 2, y: cy };
-      } else if (cuLeft - ir.x > 0.01) {
-        return { x: (ir.x + cuLeft) / 2, y: cy };
-      } else if (ir.y + ir.h - cuBottom > cuTop - ir.y) {
-        return { x: cx, y: (cuBottom + ir.y + ir.h) / 2 };
-      } else {
-        return { x: cx, y: (ir.y + cuTop) / 2 };
-      }
-    }
+  const usedLeft = Math.max(0, -offX);
+  const usedTop = Math.max(0, -offY);
+  const usedRight = Math.min(piece.width, slotW - offX);
+  const usedBottom = Math.min(piece.height, slotH - offY);
+
+  if (usedRight <= usedLeft || usedBottom <= usedTop) {
+    return { x: ir.x + ir.w / 2, y: ir.y + ir.h / 2 };
   }
-  return { x: cx, y: cy };
+
+  return {
+    x: ir.x + (usedLeft + usedRight) / 2,
+    y: ir.y + (usedTop + usedBottom) / 2,
+  };
 }
 
 /**

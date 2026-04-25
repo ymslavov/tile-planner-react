@@ -22,7 +22,7 @@ export function CutSheet() {
   const orientation = useStore((s) => s.orientation);
   const nicheMode = useStore((s) => s.nicheMode);
 
-  const elements = buildElementList(walls, pieces);
+  const elements = buildElementList(walls, pieces, orientation);
   const entries = getCutSheetEntries(pieces, walls, orientation);
 
   const orientationLabel = orientation === 'portrait' ? t.portrait : t.landscape;
