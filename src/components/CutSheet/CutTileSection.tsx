@@ -74,72 +74,57 @@ export function CutTileSection({
     }
   }
 
-  // Compute element-number badge positions with collision avoidance.
-  // Original centroid is the piece center. If two badges would overlap (within
-  // BADGE_DIAMETER cm), shift one along its piece's longer axis. Leader lines
-  // link the badge back to the piece centroid so users can still see the link.
+  // Element-number labels are placed in a column to the RIGHT of the tile
+  // image, with thin leader lines back to each piece's centroid. This matches
+  // engineering-drawing conventions and reliably avoids overlap regardless of
+  // how many pieces cluster in one area of the tile.
   const BADGE_RADIUS = 2.5; // viewBox units (cm)
-  const MIN_DIST = BADGE_RADIUS * 2 + 0.5;
+  const COLUMN_X = tw + 5; // x position of label column (5 cm right of tile)
+  const COLUMN_TOP = BADGE_RADIUS;
+  const COLUMN_BOTTOM = th - BADGE_RADIUS;
+  const MIN_SPACING = BADGE_RADIUS * 2 + 1; // vertical spacing between labels in column
+
   type LabelLayout = {
     pieceId: string;
     num: number;
-    cx: number;
-    cy: number;
-    labelX: number;
-    labelY: number;
-    needsLeader: boolean;
+    cx: number;        // piece centroid x (in tile)
+    cy: number;        // piece centroid y (in tile)
+    labelX: number;    // label x (in column)
+    labelY: number;    // label y (in column)
   };
-  const labels: LabelLayout[] = [];
-  // Sort by area descending so larger pieces claim their natural spots first
+
+  // Step 1: compute centroids and sort labels by Y (top to bottom)
   const labelsToPlace = cuts
     .filter((c) => c.elementNum !== null)
     .map((c) => {
       const child = pieces[c.pieceId];
       const centroid = pieceCentroidInTile(child);
-      return { c, centroid, area: c.w * c.h };
+      return {
+        pieceId: c.pieceId,
+        num: c.elementNum!,
+        cx: centroid.x,
+        cy: centroid.y,
+      };
     })
-    .sort((a, b) => b.area - a.area);
+    .sort((a, b) => a.cy - b.cy);
 
-  for (const { c, centroid } of labelsToPlace) {
-    let lx = centroid.x;
-    let ly = centroid.y;
-    // Try to find a non-overlapping position by shifting along the piece's
-    // longer axis up to a few times.
-    const longerAxis = c.h > c.w ? 'y' : 'x';
-    const shortMin = longerAxis === 'y' ? c.y + BADGE_RADIUS : c.x + BADGE_RADIUS;
-    const shortMax =
-      longerAxis === 'y' ? c.y + c.h - BADGE_RADIUS : c.x + c.w - BADGE_RADIUS;
-    let attempts = 0;
-    while (attempts < 12) {
-      const overlap = labels.find(
-        (l) =>
-          Math.hypot(l.labelX - lx, l.labelY - ly) < MIN_DIST
-      );
-      if (!overlap) break;
-      // Shift away from the overlapping label along the longer axis
-      const direction =
-        longerAxis === 'y'
-          ? (overlap.labelY > ly ? -1 : 1)
-          : (overlap.labelX > lx ? -1 : 1);
-      const step = MIN_DIST * 0.8 * direction;
-      if (longerAxis === 'y') {
-        ly = Math.max(shortMin, Math.min(shortMax, ly + step));
-      } else {
-        lx = Math.max(shortMin, Math.min(shortMax, lx + step));
-      }
-      attempts++;
+  // Step 2: assign label Y positions in the column.
+  // Greedy: each label sits at max(prevY + spacing, its natural Y), clamped
+  // to the column. If the bottom is exceeded, shift everything up to fit.
+  const labels: LabelLayout[] = [];
+  let prevY = COLUMN_TOP - MIN_SPACING;
+  for (const l of labelsToPlace) {
+    const y = Math.max(prevY + MIN_SPACING, Math.min(COLUMN_BOTTOM, l.cy));
+    labels.push({ ...l, labelX: COLUMN_X, labelY: y });
+    prevY = y;
+  }
+  // If labels overflow the column bottom, shift them all up evenly.
+  const lastY = labels[labels.length - 1]?.labelY ?? 0;
+  if (lastY > COLUMN_BOTTOM) {
+    const shift = lastY - COLUMN_BOTTOM;
+    for (const l of labels) {
+      l.labelY = Math.max(COLUMN_TOP, l.labelY - shift);
     }
-    const needsLeader =
-      Math.hypot(lx - centroid.x, ly - centroid.y) > 0.5;
-    labels.push({
-      pieceId: c.pieceId,
-      num: c.elementNum!,
-      cx: centroid.x,
-      cy: centroid.y,
-      labelX: lx,
-      labelY: ly,
-      needsLeader,
-    });
   }
 
   return (
@@ -154,12 +139,15 @@ export function CutTileSection({
             className={styles.tileImg}
             alt={`Плочка ${tileNumber}`}
           />
-          {/* Thin SVG overlay with cut lines and small element-number labels */}
+          {/* SVG overlay extends past the tile's right edge to host the
+              element-number label column. Cut lines + leader dots stay over
+              the image; badges sit in the column on the right. */}
           <svg
-            viewBox={`0 0 ${tw} ${th}`}
+            viewBox={`0 0 ${tw + 12} ${th}`}
             className={styles.svgOverlay}
+            preserveAspectRatio="xMinYMin meet"
           >
-            {/* Pass 1: cut rectangles */}
+            {/* Pass 1: cut rectangles on the tile */}
             {cuts.map((cut) => (
               <rect
                 key={`r-${cut.pieceId}`}
@@ -173,33 +161,29 @@ export function CutTileSection({
                 strokeDasharray="1.2,0.8"
               />
             ))}
-            {/* Pass 2: leader lines (drawn before badges so badges sit on top) */}
-            {labels
-              .filter((l) => l.needsLeader)
-              .map((l) => (
-                <line
-                  key={`ll-${l.pieceId}`}
-                  x1={l.cx}
-                  y1={l.cy}
-                  x2={l.labelX}
-                  y2={l.labelY}
-                  stroke="#ef4444"
-                  strokeWidth="0.15"
-                />
-              ))}
+            {/* Pass 2: leader lines from each piece centroid to its column badge */}
+            {labels.map((l) => (
+              <line
+                key={`ll-${l.pieceId}`}
+                x1={l.cx}
+                y1={l.cy}
+                x2={l.labelX - BADGE_RADIUS}
+                y2={l.labelY}
+                stroke="#ef4444"
+                strokeWidth="0.15"
+              />
+            ))}
             {/* Pass 3: small dots at original centroids */}
-            {labels
-              .filter((l) => l.needsLeader)
-              .map((l) => (
-                <circle
-                  key={`d-${l.pieceId}`}
-                  cx={l.cx}
-                  cy={l.cy}
-                  r="0.5"
-                  fill="#ef4444"
-                />
-              ))}
-            {/* Pass 4: badge circles + element numbers */}
+            {labels.map((l) => (
+              <circle
+                key={`d-${l.pieceId}`}
+                cx={l.cx}
+                cy={l.cy}
+                r="0.5"
+                fill="#ef4444"
+              />
+            ))}
+            {/* Pass 4: badge circles + element numbers in the column */}
             {labels.map((l) => (
               <g key={`b-${l.pieceId}`}>
                 <circle

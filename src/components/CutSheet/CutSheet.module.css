@@ -214,22 +214,28 @@
 }
 
 .visual {
-  width: 80mm;
+  width: 90mm;
   flex-shrink: 0;
 }
 
+/* Outer container: the tile image is 60mm wide, but we need extra space on
+   the right (12 cm in viewBox = 12mm at 1mm/cm scale) for the element-number
+   label column. The SVG overlay extends past the image into this space. */
 .imgContainer {
   position: relative;
-  width: 60mm;
+  width: 72mm;
   height: 120mm;
-  border: 0.4mm solid #333;
-  overflow: hidden;
 }
 
 .tileImg {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60mm;
+  height: 120mm;
   object-fit: cover;
+  border: 0.4mm solid #333;
+  box-sizing: border-box;
 }
 
 .svgOverlay {
@@ -239,6 +245,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  overflow: visible;
 }
 
 .descriptions {
