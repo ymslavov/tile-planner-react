@@ -185,6 +185,7 @@
   background: #f8f8f8;
   border: 0.4mm dashed #f59e0b;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .nicheLegend {
