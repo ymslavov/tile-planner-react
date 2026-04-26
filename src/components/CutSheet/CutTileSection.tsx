@@ -290,8 +290,8 @@ export function CutTileSection({
               y={0}
               width={tw}
               height={th}
-              fill="#9ca3af"
-              opacity="0.55"
+              fill="#d1d5db"
+              opacity="0.35"
               mask={`url(#${maskId})`}
             />
             {/* The mask above also implicitly defines the cut lines bounding
@@ -373,7 +373,7 @@ export function CutTileSection({
           // "unused area" footer; listing them as separate entries is noise.
           if (!pl) return null;
           const wall = walls.find((w) => w.id === pl.wall.id);
-          const wallName = wall ? wall.name : '';
+          const wallName = wall ? t.translateWallName(wall.name) : '';
           const placement = pl.surface
             ? pl.wall.nicheTiles![pl.surface][pl.key]
             : pl.wall.tiles[pl.key];
@@ -424,7 +424,6 @@ export function CutTileSection({
               <p className={styles.pieceInfo}>
                 <strong>{t.position}:</strong> {wallName}
                 {pl.surface ? `, ${t.surfaceLabels(pl.surface)}` : ''}
-                {`, ${t.offset} (${offX.toFixed(1)}, ${offY.toFixed(1)}), ${t.rotation} ${placement.rotation}°`}
               </p>
             </div>
           );

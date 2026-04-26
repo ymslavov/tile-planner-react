@@ -50,7 +50,7 @@ export function NichePage({ wall, pieces, elements }: NichePageProps) {
   return (
     <div className={styles.page}>
       <h1 className={styles.pageTitle}>
-        {t.niche} — {wall.name}
+        {t.niche} — {t.translateWallName(wall.name)}
       </h1>
       <p className={styles.pageMeta}>
         {t.width} {niche.width} см, {t.height} {niche.height} см, {t.depth}{' '}

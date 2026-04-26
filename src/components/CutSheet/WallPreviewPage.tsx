@@ -39,7 +39,7 @@ export function WallPreviewPage({
   return (
     <div className={styles.page}>
       <h1 className={styles.pageTitle}>
-        {t.wall} — {wall.name}
+        {t.wall} — {t.translateWallName(wall.name)}
       </h1>
       <p className={styles.pageMeta}>
         {t.dimensions}: {wall.width} × {wall.height} см

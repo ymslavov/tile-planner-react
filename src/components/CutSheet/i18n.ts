@@ -15,6 +15,11 @@ export const t = {
   wall: 'Стена',
   wallPreview: 'Преглед на стена',
 
+  // Translate user-supplied wall names. Names like "Wall 1" → "Стена 1".
+  // Anything else passes through unchanged.
+  translateWallName: (name: string) =>
+    name.replace(/^Wall\b/i, 'Стена'),
+
   niche: 'Ниша',
   nicheSurfaces: 'Повърхности на ниша',
   nicheBack: 'Заден',
