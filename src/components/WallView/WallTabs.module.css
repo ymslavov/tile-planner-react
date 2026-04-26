@@ -58,3 +58,14 @@
 .dropTarget {
   box-shadow: -2px 0 0 0 #2563eb;
 }
+
+.tabInput {
+  font: inherit;
+  border: 1px solid #2563eb;
+  outline: none;
+  border-radius: 3px;
+  padding: 1px 4px;
+  background: #fff;
+  color: #111;
+  width: 12ch;
+}

@@ -18,7 +18,7 @@ export function tileImageUrl(tileId: number | string): string {
 export const DEFAULT_WALLS: Wall[] = [
   {
     id: 'wall-1',
-    name: 'Wall 1',
+    name: 'Стена 1',
     width: 75,
     height: 267,
     niche: null,
@@ -28,7 +28,7 @@ export const DEFAULT_WALLS: Wall[] = [
   },
   {
     id: 'wall-2',
-    name: 'Wall 2',
+    name: 'Стена 2',
     width: 179,
     height: 267,
     niche: null,
@@ -38,7 +38,7 @@ export const DEFAULT_WALLS: Wall[] = [
   },
   {
     id: 'wall-3',
-    name: 'Wall 3',
+    name: 'Стена 3',
     width: 95,
     height: 267,
     niche: {

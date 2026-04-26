@@ -61,6 +61,7 @@ interface TilePlannerActions {
   addWall: () => void;
   deleteWall: (wallId: string) => void;
   reorderWalls: (fromId: string, toId: string) => void;
+  renameWall: (wallId: string, name: string) => void;
   updateWallDimension: (wallId: string, field: 'width' | 'height', value: number) => void;
   setRemainderH: (wallId: string, mode: 'left' | 'right' | 'split') => void;
   setRemainderV: (wallId: string, mode: 'top' | 'bottom' | 'split') => void;
@@ -180,7 +181,7 @@ export const useStore = create<Store>((set, get) => ({
     const id = `wall-${Date.now()}`;
     const newWall: Wall = {
       id,
-      name: `Wall ${state.walls.length + 1}`,
+      name: `Стена ${state.walls.length + 1}`,
       width: 100,
       height: 267,
       niche: null,
@@ -221,6 +222,18 @@ export const useStore = create<Store>((set, get) => ({
     const insertAt = fromIdx < toIdx ? toIdx - 1 : toIdx;
     newWalls.splice(insertAt, 0, moved);
     set({ walls: newWalls });
+    get()._save();
+  },
+
+  renameWall: (wallId, name) => {
+    const state = get();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    set({
+      walls: state.walls.map((w) =>
+        w.id === wallId ? { ...w, name: trimmed } : w
+      ),
+    });
     get()._save();
   },
 
