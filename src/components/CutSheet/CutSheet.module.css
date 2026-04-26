@@ -3,6 +3,16 @@
 .cutSheet {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #000;
+  /* Force browsers to print background images and colors throughout the
+     cut sheet (otherwise users have to tick "Background graphics" in the
+     print dialog or the niche-surface tiles will be missing). */
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.cutSheet * {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
 }
 
 /* Each page is its own section that print-paginates cleanly */
@@ -186,6 +196,11 @@
   border: 0.4mm dashed #f59e0b;
   box-sizing: border-box;
   overflow: hidden;
+  /* Tile content is rendered as a background-image on a child div. By
+     default browsers DON'T print background images (the user has to tick
+     "Background graphics" in the print dialog). Force them on. */
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
 }
 
 .nicheLegend {
