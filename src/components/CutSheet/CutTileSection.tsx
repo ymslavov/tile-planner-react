@@ -182,23 +182,26 @@ export function CutTileSection({
     }
   }
 
-  // Element-number labels are placed in a column to the RIGHT of the tile
-  // image, with thin leader lines back to each piece's centroid. This matches
-  // engineering-drawing conventions and reliably avoids overlap regardless of
-  // how many pieces cluster in one area of the tile.
-  const BADGE_RADIUS = 2.5; // viewBox units (cm)
+  // Piece-ID labels are placed in a column to the RIGHT of the tile image,
+  // with thin leader lines back to each piece's centroid. This matches
+  // engineering-drawing conventions and reliably avoids overlap regardless
+  // of how many pieces cluster in one area of the tile.
+  const BADGE_HEIGHT = 3.5; // viewBox units (cm); pill height
+  const BADGE_HALF = BADGE_HEIGHT / 2;
+  const CHAR_W = 1.6; // approx glyph width at fontSize 2.4
+  const BADGE_PAD = 1.2;
   const COLUMN_X = tw + 5; // x position of label column (5 cm right of tile)
-  const COLUMN_TOP = BADGE_RADIUS;
-  const COLUMN_BOTTOM = th - BADGE_RADIUS;
-  const MIN_SPACING = BADGE_RADIUS * 2 + 1; // vertical spacing between labels in column
+  const COLUMN_TOP = BADGE_HALF;
+  const COLUMN_BOTTOM = th - BADGE_HALF;
+  const MIN_SPACING = BADGE_HEIGHT + 1; // vertical spacing between labels
 
   type LabelLayout = {
     pieceId: string;
-    num: number;
     cx: number;        // piece centroid x (in tile)
     cy: number;        // piece centroid y (in tile)
-    labelX: number;    // label x (in column)
-    labelY: number;    // label y (in column)
+    labelX: number;    // label center x (in column)
+    labelY: number;    // label center y (in column)
+    badgeW: number;    // badge width (in viewBox units)
   };
 
   // Step 1: compute centroids and sort labels by Y (top to bottom).
@@ -218,7 +221,6 @@ export function CutTileSection({
       );
       return {
         pieceId: e.pieceId,
-        num: e.num,
         cx: centroid.x,
         cy: centroid.y,
       };
@@ -232,7 +234,8 @@ export function CutTileSection({
   let prevY = COLUMN_TOP - MIN_SPACING;
   for (const l of labelsToPlace) {
     const y = Math.max(prevY + MIN_SPACING, Math.min(COLUMN_BOTTOM, l.cy));
-    labels.push({ ...l, labelX: COLUMN_X, labelY: y });
+    const badgeW = l.pieceId.length * CHAR_W + BADGE_PAD * 2;
+    labels.push({ ...l, labelX: COLUMN_X, labelY: y, badgeW });
     prevY = y;
   }
   // If labels overflow the column bottom, shift them all up evenly.
@@ -257,10 +260,12 @@ export function CutTileSection({
             alt={`Плочка ${tileNumber}`}
           />
           {/* SVG overlay extends past the tile's right edge to host the
-              element-number label column. Cut lines + leader dots stay over
-              the image; badges sit in the column on the right. */}
+              piece-ID label column. Cut lines + leader dots stay over the
+              image; pill-shaped ID badges sit in the column on the right.
+              The viewBox width grows with the longest piece-ID badge so
+              long chain IDs (e.g. "1-B1a1a1") aren't clipped. */}
           <svg
-            viewBox={`0 0 ${tw + 12} ${th}`}
+            viewBox={`0 0 ${Math.max(tw + 12, COLUMN_X + (labels.reduce((m, l) => Math.max(m, l.badgeW), 0)) / 2 + 1)} ${th}`}
             className={styles.svgOverlay}
             preserveAspectRatio="xMinYMin meet"
           >
@@ -317,7 +322,7 @@ export function CutTileSection({
                 key={`ll-${l.pieceId}`}
                 x1={l.cx}
                 y1={l.cy}
-                x2={l.labelX - BADGE_RADIUS}
+                x2={l.labelX - l.badgeW / 2}
                 y2={l.labelY}
                 stroke="#ef4444"
                 strokeWidth="0.15"
@@ -333,13 +338,16 @@ export function CutTileSection({
                 fill="#ef4444"
               />
             ))}
-            {/* Pass 4: badge circles + element numbers in the column */}
+            {/* Pass 4: piece-ID pill badges in the column */}
             {labels.map((l) => (
               <g key={`b-${l.pieceId}`}>
-                <circle
-                  cx={l.labelX}
-                  cy={l.labelY}
-                  r={BADGE_RADIUS}
+                <rect
+                  x={l.labelX - l.badgeW / 2}
+                  y={l.labelY - BADGE_HALF}
+                  width={l.badgeW}
+                  height={BADGE_HEIGHT}
+                  rx={BADGE_HALF}
+                  ry={BADGE_HALF}
                   fill="#fff"
                   stroke="#ef4444"
                   strokeWidth="0.3"
@@ -353,7 +361,7 @@ export function CutTileSection({
                   fontSize="2.4"
                   fontWeight="bold"
                 >
-                  {l.num}
+                  {l.pieceId}
                 </text>
               </g>
             ))}
@@ -377,7 +385,6 @@ export function CutTileSection({
           const placement = pl.surface
             ? pl.wall.nicheTiles![pl.surface][pl.key]
             : pl.wall.tiles[pl.key];
-          const elemNum = elemByPieceId.get(piece.id)?.num;
 
           // For the root piece placed with offset (a leftover from cutting),
           // display its effective used dimensions and a "(leftover)" marker
@@ -408,13 +415,6 @@ export function CutTileSection({
           return (
             <div key={piece.id} className={styles.pieceDesc}>
               <div className={styles.pieceHeader}>
-                {elemNum !== undefined && (
-                  <>
-                    <span className={styles.elementBadgeLabel}>№</span>
-                    <span className={styles.elementBadgeInline}>{elemNum}</span>
-                  </>
-                )}
-                <span className={styles.pieceBadgeLabel}>ID</span>
                 <span className={styles.pieceBadge}>{piece.id}</span>
                 <span className={styles.pieceDims}>
                   {dispW.toFixed(1)} × {dispH.toFixed(1)} см

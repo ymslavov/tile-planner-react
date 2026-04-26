@@ -90,7 +90,7 @@ export function WallPreviewPage({
                     height: `${120 * scale}mm`,
                   }}
                 />
-                <div className={styles.elementBadge}>{b.num}</div>
+                <div className={styles.elementBadge}>{b.piece.id}</div>
               </div>
             );
           })}
@@ -116,15 +116,11 @@ export function WallPreviewPage({
             <p className={styles.empty}>—</p>
           )}
           {wallElements.map((e) => (
-            <div key={e.num} className={styles.legendRow}>
-              <span className={styles.legendNum}>{e.num}</span>
+            <div key={e.pieceId} className={styles.legendRow}>
+              <span className={styles.legendNum}>{e.pieceId}</span>
               <div className={styles.legendInfo}>
-                <div className={styles.legendId}>{e.pieceId}</div>
                 <div className={styles.legendDims}>
                   {e.piece.width.toFixed(1)} × {e.piece.height.toFixed(1)} см
-                  {e.placement.rotation
-                    ? `, ${t.rotation} ${e.placement.rotation}°`
-                    : ''}
                 </div>
                 <div className={styles.legendSource}>
                   {t.fromTile} #{e.piece.sourceTileId}

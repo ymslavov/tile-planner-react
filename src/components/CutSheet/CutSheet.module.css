@@ -128,7 +128,8 @@
   border-bottom: 0.1mm solid #ddd;
 }
 
-/* Wall-preview legend — circle marker matching the element badge on the visual */
+/* Wall-preview legend — pill marker matching the element badge on the visual.
+   Uses the piece-ID as text, so width must be variable to fit chain IDs. */
 .legendNum {
   display: inline-flex;
   align-items: center;
@@ -136,11 +137,13 @@
   background: #2563eb;
   color: #fff;
   font-weight: 700;
-  font-size: 10pt;
-  width: 7mm;
-  height: 7mm;
-  border-radius: 50%;
+  font-size: 9pt;
+  height: 6mm;
+  padding: 0 2mm;
+  min-width: 6mm;
+  border-radius: 3mm;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .legendInfo {
