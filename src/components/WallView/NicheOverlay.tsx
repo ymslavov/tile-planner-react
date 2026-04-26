@@ -42,8 +42,8 @@ export function NicheOverlay({ nicheRect, scale, wall, pieces }: NicheOverlayPro
         <NicheBackImage
           piece={backPiece}
           rotation={backPlacement?.rotation ?? 0}
-          nicheW={nicheRect.width}
-          nicheH={nicheRect.height}
+          offsetX={backPlacement?.offsetX ?? 0}
+          offsetY={backPlacement?.offsetY ?? 0}
           scale={scale}
         />
       )}
@@ -54,48 +54,63 @@ export function NicheOverlay({ nicheRect, scale, wall, pieces }: NicheOverlayPro
 interface NicheBackImageProps {
   piece: Piece;
   rotation: number;
-  nicheW: number;
-  nicheH: number;
+  offsetX: number;
+  offsetY: number;
   scale: number;
 }
 
 /**
  * Renders the back-surface tile cropped to fit the niche opening.
- * Source tile image is always 60×120 cm portrait. The piece.imageRegion
- * tells us which part of the tile this piece represents.
+ *
+ * Mirrors the layout used by SurfaceGrid: a piece-sized container is
+ * positioned at (offsetX, offsetY) within the niche slot, and the source
+ * tile image is shifted inside that container so the piece's imageRegion
+ * lines up with the container's top-left. This way, dragging the back
+ * tile in the niche surface panel is faithfully reflected on the wall.
  */
-function NicheBackImage({ piece, rotation, nicheW, nicheH, scale }: NicheBackImageProps) {
+function NicheBackImage({ piece, rotation, offsetX, offsetY, scale }: NicheBackImageProps) {
   const ir = piece.imageRegion;
   const srcW = 60;
   const srcH = 120;
 
-  let rotStyle: React.CSSProperties = {};
+  let rotCss: React.CSSProperties = {};
   if (rotation !== 0) {
-    const originX = (ir.x + nicheW / 2) * scale;
-    const originY = (ir.y + nicheH / 2) * scale;
-    rotStyle = {
+    const ox = (ir.x - offsetX + piece.width / 2) * scale;
+    const oy = (ir.y - offsetY + piece.height / 2) * scale;
+    rotCss = {
       transform: `rotate(${rotation}deg)`,
-      transformOrigin: `${originX}px ${originY}px`,
+      transformOrigin: `${ox}px ${oy}px`,
     };
   }
 
   return (
-    <img
-      src={tileImageUrl(piece.sourceTileId)}
-      alt={`Niche back ${piece.id}`}
+    <div
       style={{
         position: 'absolute',
-        left: `${-ir.x * scale}px`,
-        top: `${-ir.y * scale}px`,
-        width: `${srcW * scale}px`,
-        height: `${srcH * scale}px`,
-        display: 'block',
-        ...rotStyle,
+        left: `${offsetX * scale}px`,
+        top: `${offsetY * scale}px`,
+        width: `${piece.width * scale}px`,
+        height: `${piece.height * scale}px`,
+        overflow: 'hidden',
       }}
-      onError={(e) => {
-        (e.target as HTMLImageElement).style.display = 'none';
-      }}
-      draggable={false}
-    />
+    >
+      <img
+        src={tileImageUrl(piece.sourceTileId)}
+        alt={`Niche back ${piece.id}`}
+        style={{
+          position: 'absolute',
+          left: `${-ir.x * scale}px`,
+          top: `${-ir.y * scale}px`,
+          width: `${srcW * scale}px`,
+          height: `${srcH * scale}px`,
+          display: 'block',
+          ...rotCss,
+        }}
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
+        draggable={false}
+      />
+    </div>
   );
 }

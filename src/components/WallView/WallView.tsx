@@ -3,6 +3,7 @@ import { useStore } from '../../store';
 import { computeGrid, computeNicheOverlap } from '../../services/gridEngine';
 import { WallTabs } from './WallTabs';
 import { WallGrid } from './WallGrid';
+import { AllWallsView } from './AllWallsView';
 import { RemainderControls } from './RemainderControls';
 import { NicheSurfaces } from '../NicheSurfaces/NicheSurfaces';
 import styles from './WallView.module.css';
@@ -13,6 +14,8 @@ export function WallView() {
   const pieces = useStore((s) => s.pieces);
   const orientation = useStore((s) => s.orientation);
   const nicheMode = useStore((s) => s.nicheMode);
+
+  const [viewMode, setViewMode] = useState<'single' | 'all'>('single');
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -31,6 +34,7 @@ export function WallView() {
   }, [wall?.width, wall?.height]);
 
   useEffect(() => {
+    if (viewMode !== 'single') return;
     updateScale();
 
     if (!wrapRef.current) return;
@@ -39,16 +43,25 @@ export function WallView() {
     });
     observer.observe(wrapRef.current);
     return () => observer.disconnect();
-  }, [updateScale]);
+  }, [updateScale, viewMode]);
 
   if (!wall) return null;
+
+  if (viewMode === 'all') {
+    return (
+      <div className={styles.centerPanel}>
+        <WallTabs viewMode={viewMode} onViewModeChange={setViewMode} />
+        <AllWallsView walls={walls} pieces={pieces} orientation={orientation} />
+      </div>
+    );
+  }
 
   const grid = computeGrid(wall, orientation);
   const nicheOverlap = computeNicheOverlap(wall, grid);
 
   return (
     <div className={styles.centerPanel}>
-      <WallTabs />
+      <WallTabs viewMode={viewMode} onViewModeChange={setViewMode} />
 
       <div className={styles.wallWrap} ref={wrapRef}>
         <div className={styles.wallContainer}>
