@@ -397,15 +397,28 @@ export function CutTileSection({
           // visualized via the gray-out on the tile image and the bottom
           // "unused area" footer; listing them as separate entries is noise.
           if (!pl) return null;
+          // Hide the root "whole tile" entry (id == tileNumber) once any
+          // cuts exist — its only role at that point is to label the
+          // remainder/leftover, which the user already sees as a region on
+          // the tile image. Listing the whole-tile entry alongside the
+          // actual cuts is confusing.
+          if (
+            piece.id === rootId &&
+            getChildPieces(pieces, piece.id).length > 0
+          ) {
+            return null;
+          }
           const wall = walls.find((w) => w.id === pl.wall.id);
           const wallName = wall ? t.translateWallName(wall.name) : '';
           const placement = pl.surface
             ? pl.wall.nicheTiles![pl.surface][pl.key]
             : pl.wall.tiles[pl.key];
 
-          // For the root piece placed with offset (a leftover from cutting),
-          // display its effective used dimensions and a "(leftover)" marker
-          // instead of the misleading full-tile dims.
+          // Show the EFFECTIVE used dimensions (= the size of the piece's
+          // visible portion in its slot) rather than the raw piece dims.
+          // The visible portion is what the user has to physically cut, so
+          // it's what they need on the cut sheet — raw piece dims of an
+          // ancestor piece are misleading when the slot is smaller.
           const isRoot = piece.id === rootId;
           const hasChildren = getChildPieces(pieces, piece.id).length > 0;
           const offX = placement.offsetX ?? 0;
@@ -417,16 +430,14 @@ export function CutTileSection({
 
           let dispW = piece.width;
           let dispH = piece.height;
-          if (isLeftover) {
-            const elem = elemByPieceId.get(piece.id);
-            if (elem) {
-              const usedLeft = Math.max(0, -offX);
-              const usedTop = Math.max(0, -offY);
-              const usedRight = Math.min(piece.width, elem.slotW - offX);
-              const usedBottom = Math.min(piece.height, elem.slotH - offY);
-              dispW = Math.max(0, usedRight - usedLeft);
-              dispH = Math.max(0, usedBottom - usedTop);
-            }
+          const elem = elemByPieceId.get(piece.id);
+          if (elem) {
+            const usedLeft = Math.max(0, -offX);
+            const usedTop = Math.max(0, -offY);
+            const usedRight = Math.min(piece.width, elem.slotW - offX);
+            const usedBottom = Math.min(piece.height, elem.slotH - offY);
+            dispW = Math.max(0, usedRight - usedLeft);
+            dispH = Math.max(0, usedBottom - usedTop);
           }
 
           return (
@@ -441,18 +452,15 @@ export function CutTileSection({
               <p className={styles.pieceInfo}>
                 <strong>{t.position}:</strong> {wallName}
                 {pl.surface ? `, ${t.surfaceLabels(pl.surface)}` : ''}
-                {(() => {
-                  // Position of the piece's used (visible) top-left corner
-                  // within the wall (or niche surface) — "X cm from left,
-                  // Y cm from top". Computed from slot.x + max(0, offset).
-                  const elem = elemByPieceId.get(piece.id);
-                  if (!elem) return null;
-                  const fromLeft =
-                    elem.slotX + Math.max(0, elem.placement.offsetX ?? 0);
-                  const fromTop =
-                    elem.slotY + Math.max(0, elem.placement.offsetY ?? 0);
-                  return ` · ${fromLeft.toFixed(1)} см ${t.fromLeft}, ${fromTop.toFixed(1)} см ${t.fromTop}`;
-                })()}
+                {elem &&
+                  (() => {
+                    // Position of the piece's used (visible) top-left corner
+                    // within the wall (or niche surface) — "X cm from left,
+                    // Y cm from top". Computed from slot.x + max(0, offset).
+                    const fromLeft = elem.slotX + Math.max(0, offX);
+                    const fromTop = elem.slotY + Math.max(0, offY);
+                    return ` · ${fromLeft.toFixed(1)} см ${t.fromLeft}, ${fromTop.toFixed(1)} см ${t.fromTop}`;
+                  })()}
               </p>
             </div>
           );
