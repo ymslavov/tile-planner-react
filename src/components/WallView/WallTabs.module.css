@@ -50,3 +50,11 @@
   background: #e8e8e8;
   color: #444;
 }
+
+.dragging {
+  opacity: 0.4;
+}
+
+.dropTarget {
+  box-shadow: -2px 0 0 0 #2563eb;
+}

@@ -65,7 +65,14 @@ export function AllWallsView({ walls, pieces, orientation }: AllWallsViewProps) 
             {totalWidth} cm ({walls.length} walls)
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-end',
+              gap: 0,
+              minHeight: `${maxHeight * scale}px`,
+            }}
+          >
             {walls.map((wall) => {
               const grid = computeGrid(wall, orientation);
               const nicheOverlap = computeNicheOverlap(wall, grid);

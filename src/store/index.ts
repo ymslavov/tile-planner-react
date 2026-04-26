@@ -60,6 +60,7 @@ interface TilePlannerActions {
   // Wall management
   addWall: () => void;
   deleteWall: (wallId: string) => void;
+  reorderWalls: (fromId: string, toId: string) => void;
   updateWallDimension: (wallId: string, field: 'width' | 'height', value: number) => void;
   setRemainderH: (wallId: string, mode: 'left' | 'right' | 'split') => void;
   setRemainderV: (wallId: string, mode: 'top' | 'bottom' | 'split') => void;
@@ -204,6 +205,22 @@ export const useStore = create<Store>((set, get) => ({
         ? newWalls[Math.max(0, idx - 1)].id
         : state.activeWallId;
     set({ walls: newWalls, activeWallId: newActiveId });
+    get()._save();
+  },
+
+  reorderWalls: (fromId, toId) => {
+    if (fromId === toId) return;
+    const state = get();
+    const fromIdx = state.walls.findIndex((w) => w.id === fromId);
+    const toIdx = state.walls.findIndex((w) => w.id === toId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const newWalls = [...state.walls];
+    const [moved] = newWalls.splice(fromIdx, 1);
+    // Insert BEFORE the drop target. After removing fromIdx, the target's
+    // index shifts left by 1 if fromIdx < toIdx.
+    const insertAt = fromIdx < toIdx ? toIdx - 1 : toIdx;
+    newWalls.splice(insertAt, 0, moved);
+    set({ walls: newWalls });
     get()._save();
   },
 
