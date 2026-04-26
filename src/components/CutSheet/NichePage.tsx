@@ -23,12 +23,19 @@ export function NichePage({ wall, pieces, elements }: NichePageProps) {
 
   const niche = wall.niche;
 
-  // Pick a scale that fits the unfolded cross (depth + width + depth) into
-  // an A4-portrait page width with margins (~178 mm usable). Round to one
-  // decimal so dimensions read cleanly.
-  const usableMm = 170;
+  // Pick a scale that fits the unfolded cross into the page area, accounting
+  // for both width AND height (tall niches were overflowing). Each grid row
+  // also reserves labelH mm for the surface label that sits above its visual.
+  const labelH = 5; // mm reserved per row for the label above each visual
+  const usableW = 170; // A4 portrait content width minus margins
+  const usableH = 215; // A4 portrait content height minus title, meta, legend
   const crossWidthCm = niche.depth + niche.width + niche.depth;
-  const scale = Math.min(2.5, usableMm / crossWidthCm); // mm per cm
+  const crossHeightCm = niche.depth + niche.height + niche.depth;
+  const scale = Math.min(
+    2.5,
+    usableW / crossWidthCm,
+    (usableH - 3 * labelH) / crossHeightCm
+  ); // mm per cm
 
   // Cross layout cell sizes in mm
   const cellDepth = niche.depth * scale;
@@ -57,7 +64,7 @@ export function NichePage({ wall, pieces, elements }: NichePageProps) {
         style={{
           display: 'grid',
           gridTemplateColumns: `${cellDepth}mm ${cellW}mm ${cellDepth}mm`,
-          gridTemplateRows: `${cellDepth}mm ${cellH}mm ${cellDepth}mm`,
+          gridTemplateRows: `${cellDepth + labelH}mm ${cellH + labelH}mm ${cellDepth + labelH}mm`,
           gap: '2mm',
           marginBottom: '8mm',
           width: 'fit-content',

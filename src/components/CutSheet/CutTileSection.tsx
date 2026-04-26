@@ -48,8 +48,13 @@ export function CutTileSection({
     }
   }
 
-  // Collect all leaf-level cut rectangles to render with thin dashed lines.
-  // We render each child's bounding box once per parent in the chain.
+  // Collect all cut rectangles to render with thin dashed lines.
+  // Two sources of cuts on a tile:
+  //   1. Child-piece bounding boxes (each cut subdivides the parent into smaller pieces)
+  //   2. Cutouts within a piece (notches removed for niches, walls, etc.)
+  // Cuts are deduplicated by (x,y,w,h) — many pieces in a chain share the same
+  // imageRegion (e.g. 14-B, 14-B1, 14-B1a all occupy the same area), so without
+  // dedup the same rectangle would be drawn multiple times overlapping.
   type CutRect = {
     x: number;
     y: number;
@@ -59,18 +64,85 @@ export function CutTileSection({
     elementNum: number | null;
   };
   const cuts: CutRect[] = [];
+  const cutKeys = new Set<string>();
+  const addCut = (
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    pieceId: string,
+    elementNum: number | null
+  ) => {
+    const key = `${x.toFixed(2)},${y.toFixed(2)},${w.toFixed(2)},${h.toFixed(2)}`;
+    if (cutKeys.has(key)) return;
+    cutKeys.add(key);
+    cuts.push({ x, y, w, h, pieceId, elementNum });
+  };
+
+  // Identify "unused" regions of the tile — sub-pieces that are not placed
+  // and have no placed descendants. These get a translucent gray overlay so
+  // the user can see at a glance which parts of the tile aren't being used.
+  const isUsed = (pieceId: string): boolean => {
+    if (placed.has(pieceId)) return true;
+    for (const c of getChildPieces(pieces, pieceId)) {
+      if (isUsed(c.id)) return true;
+    }
+    return false;
+  };
+  const unusedRegions: { x: number; y: number; w: number; h: number }[] = [];
+  const collectUnused = (pieceId: string) => {
+    const p = pieces[pieceId];
+    if (!p) return;
+    if (!isUsed(pieceId)) {
+      unusedRegions.push(p.imageRegion);
+      return; // descendants are already covered by this region
+    }
+    for (const c of getChildPieces(pieces, pieceId)) collectUnused(c.id);
+  };
+  collectUnused(rootId);
+
   for (const piece of allPieces) {
+    // 1. Child bounding boxes (the cut that separates this piece from its siblings)
     const children = getChildPieces(pieces, piece.id);
     for (const child of children) {
       const cr = child.imageRegion;
-      cuts.push({
-        x: cr.x,
-        y: cr.y,
-        w: cr.w,
-        h: cr.h,
-        pieceId: child.id,
-        elementNum: elemByPieceId.get(child.id)?.num ?? null,
-      });
+      addCut(
+        cr.x,
+        cr.y,
+        cr.w,
+        cr.h,
+        child.id,
+        elemByPieceId.get(child.id)?.num ?? null
+      );
+    }
+
+    // 2. Cutouts inside this piece (notches — additional cut lines needed to
+    //    physically cut the piece's L/U/frame shape from its rectangular bounding
+    //    box). Cutout coords are in the piece's local coord system, which may
+    //    differ from the tile coord system if the piece is rotated relative to
+    //    its imageRegion (when piece.width != imageRegion.w).
+    if (piece.geometry.cutouts.length > 0) {
+      const ir = piece.imageRegion;
+      const isRotated =
+        Math.abs(piece.width - ir.w) > 0.01 &&
+        Math.abs(piece.width - ir.h) < 0.01;
+      for (const co of piece.geometry.cutouts) {
+        let cx: number, cy: number, cw: number, ch: number;
+        if (isRotated) {
+          // Piece is rotated 90° within its imageRegion (CW): piece-local (x,y)
+          // maps to tile (ir.x + ir.w - y - h, ir.y + x), and dimensions swap.
+          cx = ir.x + ir.w - co.y - co.h;
+          cy = ir.y + co.x;
+          cw = co.h;
+          ch = co.w;
+        } else {
+          cx = ir.x + co.x;
+          cy = ir.y + co.y;
+          cw = co.w;
+          ch = co.h;
+        }
+        addCut(cx, cy, cw, ch, `${piece.id}-co`, null);
+      }
     }
   }
 
@@ -156,6 +228,18 @@ export function CutTileSection({
             className={styles.svgOverlay}
             preserveAspectRatio="xMinYMin meet"
           >
+            {/* Pass 0: gray overlay for unused regions of the tile */}
+            {unusedRegions.map((r, i) => (
+              <rect
+                key={`u-${i}`}
+                x={r.x}
+                y={r.y}
+                width={r.w}
+                height={r.h}
+                fill="#9ca3af"
+                opacity="0.55"
+              />
+            ))}
             {/* Pass 1: cut rectangles on the tile */}
             {cuts.map((cut) => (
               <rect
@@ -228,6 +312,30 @@ export function CutTileSection({
         {allPieces.map((piece) => {
           const pl = getPiecePlacement(walls, piece.id);
           const isPlaced = !!pl;
+          // Skip the root piece when it has been cut and is NOT used as a
+          // full tile. Two cases to hide it:
+          //  - root has children but isn't placed → it was cut into sub-pieces
+          //    and the whole tile no longer exists as a usable element.
+          //  - root is placed with a non-zero offset → it represents the
+          //    leftover after a cut, not a 60×120 full-tile use.
+          // When the root is placed at offset (0,0), it IS a legitimate full
+          // tile use (the user has both a whole tile and additional cut
+          // pieces from another instance of the same tile pattern), so keep it.
+          if (
+            piece.id === rootId &&
+            getChildPieces(pieces, piece.id).length > 0
+          ) {
+            const placementForRoot = isPlaced
+              ? pl!.surface
+                ? pl!.wall.nicheTiles![pl!.surface][pl!.key]
+                : pl!.wall.tiles[pl!.key]
+              : null;
+            const offX = placementForRoot?.offsetX ?? 0;
+            const offY = placementForRoot?.offsetY ?? 0;
+            const isFullTilePlacement =
+              isPlaced && Math.abs(offX) < 0.01 && Math.abs(offY) < 0.01;
+            if (!isFullTilePlacement) return null;
+          }
           const wall = isPlaced ? walls.find((w) => w.id === pl!.wall.id) : null;
           const wallName = wall ? wall.name : '';
           const placement = isPlaced
