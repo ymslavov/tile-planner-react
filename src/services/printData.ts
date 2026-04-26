@@ -23,6 +23,10 @@ export interface ElementEntry {
   placement: Placement;
   slotW: number;
   slotH: number;
+  // Slot's top-left in wall (or niche surface) coords. Used to report each
+  // placed piece's actual position on the wall ("X cm from left, Y from top").
+  slotX: number;
+  slotY: number;
 }
 
 /**
@@ -57,6 +61,8 @@ export function buildElementList(
         placement,
         slotW: slot.w,
         slotH: slot.h,
+        slotX: slot.x,
+        slotY: slot.y,
       });
     }
 
@@ -93,6 +99,8 @@ export function buildElementList(
             placement,
             slotW: slot.w,
             slotH: slot.h,
+            slotX: slot.x,
+            slotY: slot.y,
           });
         }
       }

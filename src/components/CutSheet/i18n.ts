@@ -32,7 +32,8 @@ export const t = {
   height: 'Височина',
   depth: 'Дълбочина',
   fromFloor: 'От пода',
-  fromLeft: 'От ляво',
+  fromLeft: 'от ляво',
+  fromTop: 'от горе',
 
   element: 'Елемент',
   elements: 'Елементи',

@@ -170,6 +170,10 @@ export function CutTileSection({
     //    box). Cutout coords are in the piece's local coord system, which may
     //    differ from the tile coord system if the piece is rotated relative to
     //    its imageRegion (when piece.width != imageRegion.w).
+    //    Same filter as child cuts: only draw cutouts for pieces actually in
+    //    use (placed or with a placed descendant) — otherwise stray notch
+    //    rectangles for unused offcuts pollute the visualization.
+    if (!hasPlacedInSubtree(piece.id)) continue;
     if (piece.geometry.cutouts.length > 0) {
       const ir = piece.imageRegion;
       const isRotated =
@@ -437,6 +441,18 @@ export function CutTileSection({
               <p className={styles.pieceInfo}>
                 <strong>{t.position}:</strong> {wallName}
                 {pl.surface ? `, ${t.surfaceLabels(pl.surface)}` : ''}
+                {(() => {
+                  // Position of the piece's used (visible) top-left corner
+                  // within the wall (or niche surface) — "X cm from left,
+                  // Y cm from top". Computed from slot.x + max(0, offset).
+                  const elem = elemByPieceId.get(piece.id);
+                  if (!elem) return null;
+                  const fromLeft =
+                    elem.slotX + Math.max(0, elem.placement.offsetX ?? 0);
+                  const fromTop =
+                    elem.slotY + Math.max(0, elem.placement.offsetY ?? 0);
+                  return ` · ${fromLeft.toFixed(1)} см ${t.fromLeft}, ${fromTop.toFixed(1)} см ${t.fromTop}`;
+                })()}
               </p>
             </div>
           );
