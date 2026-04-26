@@ -48,6 +48,7 @@ export const t = {
   available: 'Налична',
   unplaced: 'непоставена',
   unusedArea: 'Неизползвана площ',
+  leftover: 'остатък',
 
   surfaceLabels: (s: string) => {
     switch (s) {

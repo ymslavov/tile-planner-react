@@ -79,27 +79,63 @@ export function CutTileSection({
     cuts.push({ x, y, w, h, pieceId, elementNum });
   };
 
-  // Identify "unused" regions of the tile — sub-pieces that are not placed
-  // and have no placed descendants. These get a translucent gray overlay so
-  // the user can see at a glance which parts of the tile aren't being used.
-  const isUsed = (pieceId: string): boolean => {
-    if (placed.has(pieceId)) return true;
-    for (const c of getChildPieces(pieces, pieceId)) {
-      if (isUsed(c.id)) return true;
+  // Identify "unused" regions of the tile.
+  //
+  // For each PLACED piece, compute the rectangle that's actually visible in
+  // its slot (offset + slot size determine which part of the piece is used).
+  // Map that visible rect back to tile coords. Then any sub-piece's
+  // imageRegion that doesn't significantly overlap a visible rect is "unused"
+  // and gets a translucent gray overlay.
+  //
+  // Why not just gray the imageRegions of unplaced pieces? Because chains
+  // like 7-C → 7-C1 → 7-C1a all share the same imageRegion. If 7-C is placed
+  // but 7-C1a isn't, naively graying 7-C1a would dim the very area used by
+  // its placed ancestor.
+  type Rect = { x: number; y: number; w: number; h: number };
+  const visibleRects: Rect[] = [];
+  for (const piece of allPieces) {
+    if (!placed.has(piece.id)) continue;
+    const elem = elemByPieceId.get(piece.id);
+    if (!elem) continue;
+    const ir = piece.imageRegion;
+    const offX = elem.placement.offsetX ?? 0;
+    const offY = elem.placement.offsetY ?? 0;
+    const isRotated =
+      Math.abs(piece.width - ir.w) > 0.01 &&
+      Math.abs(piece.width - ir.h) < 0.01;
+    // Visible portion in piece-local coords (axis-aligned to the piece).
+    const vxL = Math.max(0, -offX);
+    const vyT = Math.max(0, -offY);
+    const vxR = Math.min(piece.width, elem.slotW - offX);
+    const vyB = Math.min(piece.height, elem.slotH - offY);
+    if (vxR <= vxL || vyB <= vyT) continue;
+    if (isRotated) {
+      // 90° CW: piece-local (x,y) → tile (ir.x + ir.w - y - h, ir.y + x).
+      visibleRects.push({
+        x: ir.x + ir.w - vyB,
+        y: ir.y + vxL,
+        w: vyB - vyT,
+        h: vxR - vxL,
+      });
+    } else {
+      visibleRects.push({
+        x: ir.x + vxL,
+        y: ir.y + vyT,
+        w: vxR - vxL,
+        h: vyB - vyT,
+      });
     }
-    return false;
-  };
-  const unusedRegions: { x: number; y: number; w: number; h: number }[] = [];
-  const collectUnused = (pieceId: string) => {
-    const p = pieces[pieceId];
-    if (!p) return;
-    if (!isUsed(pieceId)) {
-      unusedRegions.push(p.imageRegion);
-      return; // descendants are already covered by this region
-    }
-    for (const c of getChildPieces(pieces, pieceId)) collectUnused(c.id);
-  };
-  collectUnused(rootId);
+  }
+
+  // Total used area on the tile is the sum of visibleRects' areas (assuming
+  // they don't overlap, which holds when each placement maps to a distinct
+  // slot region of the tile). Used to compute the "unused area" footer.
+  const usedArea = visibleRects.reduce((s, r) => s + r.w * r.h, 0);
+  const tileArea = tw * th;
+  const unusedAreaTotal = Math.max(0, tileArea - usedArea);
+
+  // Unique mask id per tile so multiple cut sheets in one DOM don't collide.
+  const maskId = `unused-mask-${tileNumber}`;
 
   for (const piece of allPieces) {
     // 1. Child bounding boxes (the cut that separates this piece from its siblings)
@@ -228,18 +264,39 @@ export function CutTileSection({
             className={styles.svgOverlay}
             preserveAspectRatio="xMinYMin meet"
           >
-            {/* Pass 0: gray overlay for unused regions of the tile */}
-            {unusedRegions.map((r, i) => (
-              <rect
-                key={`u-${i}`}
-                x={r.x}
-                y={r.y}
-                width={r.w}
-                height={r.h}
-                fill="#9ca3af"
-                opacity="0.55"
-              />
-            ))}
+            {/* Pass 0: gray overlay for unused regions of the tile.
+                Mask: white = grayed, black = punched out (visible). We start
+                white over the whole tile then paint black over each placed
+                piece's visible rectangle, so the gray fill only paints the
+                truly-unused area — even when multiple sub-pieces share the
+                same imageRegion but only part of it is actually used. */}
+            <defs>
+              <mask id={maskId}>
+                <rect x={0} y={0} width={tw} height={th} fill="white" />
+                {visibleRects.map((r, i) => (
+                  <rect
+                    key={`vr-${i}`}
+                    x={r.x}
+                    y={r.y}
+                    width={r.w}
+                    height={r.h}
+                    fill="black"
+                  />
+                ))}
+              </mask>
+            </defs>
+            <rect
+              x={0}
+              y={0}
+              width={tw}
+              height={th}
+              fill="#9ca3af"
+              opacity="0.55"
+              mask={`url(#${maskId})`}
+            />
+            {/* The mask above also implicitly defines the cut lines bounding
+                each visible region, so the explicit cut rectangles below
+                continue to layer on top for crisp dashed outlines. */}
             {/* Pass 1: cut rectangles on the tile */}
             {cuts.map((cut) => (
               <rect
@@ -311,39 +368,42 @@ export function CutTileSection({
 
         {allPieces.map((piece) => {
           const pl = getPiecePlacement(walls, piece.id);
-          const isPlaced = !!pl;
-          // Skip the root piece when it has been cut and is NOT used as a
-          // full tile. Two cases to hide it:
-          //  - root has children but isn't placed → it was cut into sub-pieces
-          //    and the whole tile no longer exists as a usable element.
-          //  - root is placed with a non-zero offset → it represents the
-          //    leftover after a cut, not a 60×120 full-tile use.
-          // When the root is placed at offset (0,0), it IS a legitimate full
-          // tile use (the user has both a whole tile and additional cut
-          // pieces from another instance of the same tile pattern), so keep it.
-          if (
-            piece.id === rootId &&
-            getChildPieces(pieces, piece.id).length > 0
-          ) {
-            const placementForRoot = isPlaced
-              ? pl!.surface
-                ? pl!.wall.nicheTiles![pl!.surface][pl!.key]
-                : pl!.wall.tiles[pl!.key]
-              : null;
-            const offX = placementForRoot?.offsetX ?? 0;
-            const offY = placementForRoot?.offsetY ?? 0;
-            const isFullTilePlacement =
-              isPlaced && Math.abs(offX) < 0.01 && Math.abs(offY) < 0.01;
-            if (!isFullTilePlacement) return null;
-          }
-          const wall = isPlaced ? walls.find((w) => w.id === pl!.wall.id) : null;
+          // Only show placed pieces. Unplaced offcuts ("available") are
+          // visualized via the gray-out on the tile image and the bottom
+          // "unused area" footer; listing them as separate entries is noise.
+          if (!pl) return null;
+          const wall = walls.find((w) => w.id === pl.wall.id);
           const wallName = wall ? wall.name : '';
-          const placement = isPlaced
-            ? pl!.surface
-              ? pl!.wall.nicheTiles![pl!.surface][pl!.key]
-              : pl!.wall.tiles[pl!.key]
-            : null;
+          const placement = pl.surface
+            ? pl.wall.nicheTiles![pl.surface][pl.key]
+            : pl.wall.tiles[pl.key];
           const elemNum = elemByPieceId.get(piece.id)?.num;
+
+          // For the root piece placed with offset (a leftover from cutting),
+          // display its effective used dimensions and a "(leftover)" marker
+          // instead of the misleading full-tile dims.
+          const isRoot = piece.id === rootId;
+          const hasChildren = getChildPieces(pieces, piece.id).length > 0;
+          const offX = placement.offsetX ?? 0;
+          const offY = placement.offsetY ?? 0;
+          const isLeftover =
+            isRoot &&
+            hasChildren &&
+            (Math.abs(offX) > 0.01 || Math.abs(offY) > 0.01);
+
+          let dispW = piece.width;
+          let dispH = piece.height;
+          if (isLeftover) {
+            const elem = elemByPieceId.get(piece.id);
+            if (elem) {
+              const usedLeft = Math.max(0, -offX);
+              const usedTop = Math.max(0, -offY);
+              const usedRight = Math.min(piece.width, elem.slotW - offX);
+              const usedBottom = Math.min(piece.height, elem.slotH - offY);
+              dispW = Math.max(0, usedRight - usedLeft);
+              dispH = Math.max(0, usedBottom - usedTop);
+            }
+          }
 
           return (
             <div key={piece.id} className={styles.pieceDesc}>
@@ -357,34 +417,26 @@ export function CutTileSection({
                 <span className={styles.pieceBadgeLabel}>ID</span>
                 <span className={styles.pieceBadge}>{piece.id}</span>
                 <span className={styles.pieceDims}>
-                  {piece.width.toFixed(1)} × {piece.height.toFixed(1)} см
+                  {dispW.toFixed(1)} × {dispH.toFixed(1)} см
+                  {isLeftover ? ` (${t.leftover})` : ''}
                 </span>
               </div>
               <p className={styles.pieceInfo}>
-                {isPlaced ? (
-                  <>
-                    <strong>{t.position}:</strong> {wallName}
-                    {pl!.surface ? `, ${t.surfaceLabels(pl!.surface)}` : ''}
-                    {placement
-                      ? `, ${t.offset} (${(placement.offsetX ?? 0).toFixed(1)}, ${(placement.offsetY ?? 0).toFixed(1)}), ${t.rotation} ${placement.rotation}°`
-                      : ''}
-                  </>
-                ) : (
-                  <strong>{t.available} ({t.unplaced})</strong>
-                )}
+                <strong>{t.position}:</strong> {wallName}
+                {pl.surface ? `, ${t.surfaceLabels(pl.surface)}` : ''}
+                {`, ${t.offset} (${offX.toFixed(1)}, ${offY.toFixed(1)}), ${t.rotation} ${placement.rotation}°`}
               </p>
             </div>
           );
         })}
 
         {(() => {
-          const unplacedArea = allPieces
-            .filter((p) => !placed.has(p.id) && p.id !== rootId)
-            .reduce((sum, p) => sum + p.width * p.height, 0);
-          if (unplacedArea <= 0.1) return null;
+          // Unused area = total tile area minus the sum of visible portions
+          // of all placed pieces. Computed once at the top of the component.
+          if (unusedAreaTotal <= 0.1) return null;
           return (
             <div className={styles.waste}>
-              {t.unusedArea}: {unplacedArea.toFixed(0)} см²
+              {t.unusedArea}: {unusedAreaTotal.toFixed(0)} см²
             </div>
           );
         })()}
