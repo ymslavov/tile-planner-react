@@ -290,8 +290,8 @@ export function CutTileSection({
               y={0}
               width={tw}
               height={th}
-              fill="#d1d5db"
-              opacity="0.35"
+              fill="#e5e7eb"
+              opacity="0.2"
               mask={`url(#${maskId})`}
             />
             {/* The mask above also implicitly defines the cut lines bounding

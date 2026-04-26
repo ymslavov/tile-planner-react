@@ -186,10 +186,6 @@
   border: 0.4mm dashed #f59e0b;
   box-sizing: border-box;
   overflow: hidden;
-  /* Chrome's print/PDF engine ignores overflow:hidden for absolutely-
-     positioned descendants in some layouts. clip-path enforces the clip
-     reliably regardless of child positioning. */
-  clip-path: inset(0);
 }
 
 .nicheLegend {

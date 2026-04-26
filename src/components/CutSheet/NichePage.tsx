@@ -208,31 +208,27 @@ function NicheSurfaceCell({
           const ir = piece.imageRegion;
           const offsetX = placement.offsetX ?? 0;
           const offsetY = placement.offsetY ?? 0;
-
+          // Render the tile as a background-image of a div sized to the
+          // surface. background-image is naturally clipped to the element's
+          // box (no fragile overflow-of-absolute-children dance), and Chrome's
+          // PDF engine handles it reliably. Position the background so that
+          // tile coord (0,0) lands at surface coord (offsetX - ir.x, offsetY - ir.y),
+          // i.e. the piece's top-left in the slot, minus the piece's offset
+          // into the source tile.
+          const bgX = (offsetX - ir.x) * scale;
+          const bgY = (offsetY - ir.y) * scale;
           return (
             <div
               key={slotKey}
               style={{
                 position: 'absolute',
-                left: `${offsetX * scale}mm`,
-                top: `${offsetY * scale}mm`,
-                width: `${piece.width * scale}mm`,
-                height: `${piece.height * scale}mm`,
-                overflow: 'hidden',
+                inset: 0,
+                backgroundImage: `url(${tileImageUrl(piece.sourceTileId)})`,
+                backgroundSize: `${60 * scale}mm ${120 * scale}mm`,
+                backgroundPosition: `${bgX}mm ${bgY}mm`,
+                backgroundRepeat: 'no-repeat',
               }}
-            >
-              <img
-                src={tileImageUrl(piece.sourceTileId)}
-                alt=""
-                style={{
-                  position: 'absolute',
-                  left: `${-ir.x * scale}mm`,
-                  top: `${-ir.y * scale}mm`,
-                  width: `${60 * scale}mm`,
-                  height: `${120 * scale}mm`,
-                }}
-              />
-            </div>
+            />
           );
         })}
         {/* Badges anchored to the surface (not the piece container) so they
