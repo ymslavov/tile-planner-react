@@ -137,10 +137,23 @@ export function CutTileSection({
   // Unique mask id per tile so multiple cut sheets in one DOM don't collide.
   const maskId = `unused-mask-${tileNumber}`;
 
+  // Only draw cutlines for child pieces that are actually used (placed or
+  // have a placed descendant). Unused offcuts shouldn't contribute cutlines
+  // — otherwise stray boundaries appear inside the regions of placed
+  // pieces, looking like rendering bugs.
+  const hasPlacedInSubtree = (pieceId: string): boolean => {
+    if (placed.has(pieceId)) return true;
+    for (const c of getChildPieces(pieces, pieceId)) {
+      if (hasPlacedInSubtree(c.id)) return true;
+    }
+    return false;
+  };
+
   for (const piece of allPieces) {
     // 1. Child bounding boxes (the cut that separates this piece from its siblings)
     const children = getChildPieces(pieces, piece.id);
     for (const child of children) {
+      if (!hasPlacedInSubtree(child.id)) continue;
       const cr = child.imageRegion;
       addCut(
         cr.x,

@@ -1,0 +1,1307 @@
+{
+  "orientation": "portrait",
+  "nicheMode": "independent",
+  "activeWallId": "wall-3",
+  "pieces": {
+    "1": {
+      "id": "1",
+      "sourceTileId": 1,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "2": {
+      "id": "2",
+      "sourceTileId": 2,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "3": {
+      "id": "3",
+      "sourceTileId": 3,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "4": {
+      "id": "4",
+      "sourceTileId": 4,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "5": {
+      "id": "5",
+      "sourceTileId": 5,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "6": {
+      "id": "6",
+      "sourceTileId": 6,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "7": {
+      "id": "7",
+      "sourceTileId": 7,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "8": {
+      "id": "8",
+      "sourceTileId": 8,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "9": {
+      "id": "9",
+      "sourceTileId": 9,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "10": {
+      "id": "10",
+      "sourceTileId": 10,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "11": {
+      "id": "11",
+      "sourceTileId": 11,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "12": {
+      "id": "12",
+      "sourceTileId": 12,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "13": {
+      "id": "13",
+      "sourceTileId": 13,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "14": {
+      "id": "14",
+      "sourceTileId": 14,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "15": {
+      "id": "15",
+      "sourceTileId": 15,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "16": {
+      "id": "16",
+      "sourceTileId": 16,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "17": {
+      "id": "17",
+      "sourceTileId": 17,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "18": {
+      "id": "18",
+      "sourceTileId": 18,
+      "parentId": null,
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "14-B": {
+      "id": "14-B",
+      "sourceTileId": 14,
+      "parentId": "14",
+      "width": 60,
+      "height": 28.55614973262032,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 28.55614973262032
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 28.55614973262032
+      }
+    },
+    "14-C": {
+      "id": "14-C",
+      "sourceTileId": 14,
+      "parentId": "14",
+      "width": 60,
+      "height": 64.84385026737966,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 64.84385026737966
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 55.156149732620335,
+        "w": 60,
+        "h": 64.84385026737966
+      }
+    },
+    "14-B1": {
+      "id": "14-B1",
+      "sourceTileId": 14,
+      "parentId": "14-B",
+      "width": 60,
+      "height": 28.55614973262032,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 28.55614973262032
+        },
+        "cutouts": [
+          {
+            "x": 0,
+            "y": 0,
+            "w": 7.3,
+            "h": 26.600000000000012
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 28.55614973262032
+      }
+    },
+    "14-B1a": {
+      "id": "14-B1a",
+      "sourceTileId": 14,
+      "parentId": "14-B1",
+      "width": 60,
+      "height": 28.55614973262032,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 28.55614973262032
+        },
+        "cutouts": [
+          {
+            "x": 0,
+            "y": 0,
+            "w": 7.3,
+            "h": 26.600000000000012
+          },
+          {
+            "x": 52.7,
+            "y": 1.9037433155080214,
+            "w": 7.299999999999997,
+            "h": 26.600000000000012
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 28.55614973262032
+      }
+    },
+    "4-B": {
+      "id": "4-B",
+      "sourceTileId": 4,
+      "parentId": "4",
+      "width": 1.4000000000000057,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 1.4000000000000057,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 58.599999999999994,
+        "y": 0,
+        "w": 1.4000000000000057,
+        "h": 120
+      }
+    },
+    "1-B": {
+      "id": "1-B",
+      "sourceTileId": 1,
+      "parentId": "1",
+      "width": 1.4000000000000057,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 1.4000000000000057,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 58.599999999999994,
+        "y": 0,
+        "w": 1.4000000000000057,
+        "h": 120
+      }
+    },
+    "17-B": {
+      "id": "17-B",
+      "sourceTileId": 17,
+      "parentId": "17",
+      "width": 60,
+      "height": 83.39999999999999,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 83.39999999999999
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 36.60000000000001,
+        "w": 60,
+        "h": 83.39999999999999
+      }
+    },
+    "17-B1": {
+      "id": "17-B1",
+      "sourceTileId": 17,
+      "parentId": "17-B",
+      "width": 60,
+      "height": 83.39999999999999,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 83.39999999999999
+        },
+        "cutouts": [
+          {
+            "x": 0,
+            "y": 0,
+            "w": 58.599999999999994,
+            "h": 36.60000000000001
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 36.60000000000001,
+        "w": 60,
+        "h": 83.39999999999999
+      }
+    },
+    "5-B": {
+      "id": "5-B",
+      "sourceTileId": 5,
+      "parentId": "5",
+      "width": 42.7,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 42.7,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 42.7,
+        "h": 120
+      }
+    },
+    "8-B": {
+      "id": "8-B",
+      "sourceTileId": 8,
+      "parentId": "8",
+      "width": 42.7,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 42.7,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 17.3,
+        "y": 0,
+        "w": 42.7,
+        "h": 120
+      }
+    },
+    "8-B1": {
+      "id": "8-B1",
+      "sourceTileId": 8,
+      "parentId": "8-B",
+      "width": 25.400000000000002,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 25.400000000000002,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 17.3,
+        "y": 0,
+        "w": 25.400000000000002,
+        "h": 120
+      }
+    },
+    "8-B1a": {
+      "id": "8-B1a",
+      "sourceTileId": 8,
+      "parentId": "8-B1",
+      "width": 18.1,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 18.1,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 24.6,
+        "y": 0,
+        "w": 18.1,
+        "h": 120
+      }
+    },
+    "8-B1a1": {
+      "id": "8-B1a1",
+      "sourceTileId": 8,
+      "parentId": "8-B1a",
+      "width": 10.8,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 10.8,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 31.900000000000002,
+        "y": 0,
+        "w": 10.8,
+        "h": 120
+      }
+    },
+    "16-B": {
+      "id": "16-B",
+      "sourceTileId": 16,
+      "parentId": "16",
+      "width": 32.36363636363636,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 32.36363636363636,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 32.36363636363636,
+        "h": 120
+      }
+    },
+    "16-C": {
+      "id": "16-C",
+      "sourceTileId": 16,
+      "parentId": "16",
+      "width": 20.336363636363643,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 20.336363636363643,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 39.66363636363636,
+        "y": 0,
+        "w": 20.336363636363643,
+        "h": 120
+      }
+    },
+    "7-B": {
+      "id": "7-B",
+      "sourceTileId": 7,
+      "parentId": "7",
+      "width": 35.07203389830509,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 35.07203389830509,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 35.07203389830509,
+        "h": 120
+      }
+    },
+    "7-C": {
+      "id": "7-C",
+      "sourceTileId": 7,
+      "parentId": "7",
+      "width": 17.627966101694916,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 17.627966101694916,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 42.372033898305084,
+        "y": 0,
+        "w": 17.627966101694916,
+        "h": 120
+      }
+    },
+    "9-B": {
+      "id": "9-B",
+      "sourceTileId": 9,
+      "parentId": "9",
+      "width": 60,
+      "height": 93.39999999999999,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 93.39999999999999
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 26.600000000000012,
+        "w": 60,
+        "h": 93.39999999999999
+      }
+    },
+    "9-B1": {
+      "id": "9-B1",
+      "sourceTileId": 9,
+      "parentId": "9-B",
+      "width": 60,
+      "height": 93.39999999999999,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 93.39999999999999
+        },
+        "cutouts": [
+          {
+            "x": 42.7,
+            "y": 0,
+            "w": 17.299999999999997,
+            "h": 26.600000000000012
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 26.600000000000012,
+        "w": 60,
+        "h": 93.39999999999999
+      }
+    },
+    "9-B1a": {
+      "id": "9-B1a",
+      "sourceTileId": 9,
+      "parentId": "9-B1",
+      "width": 60,
+      "height": 93.39999999999999,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 93.39999999999999
+        },
+        "cutouts": [
+          {
+            "x": 42.7,
+            "y": 0,
+            "w": 17.299999999999997,
+            "h": 26.600000000000012
+          },
+          {
+            "x": 25.400000000000002,
+            "y": 0,
+            "w": 17.3,
+            "h": 26.600000000000012
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 26.600000000000012,
+        "w": 60,
+        "h": 93.39999999999999
+      }
+    },
+    "14-B1a1": {
+      "id": "14-B1a1",
+      "sourceTileId": 14,
+      "parentId": "14-B1a",
+      "width": 60,
+      "height": 28.55614973262032,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 28.55614973262032
+        },
+        "cutouts": [
+          {
+            "x": 0,
+            "y": 0,
+            "w": 7.3,
+            "h": 26.600000000000012
+          },
+          {
+            "x": 52.7,
+            "y": 1.9037433155080214,
+            "w": 7.299999999999997,
+            "h": 26.600000000000012
+          },
+          {
+            "x": 7.3,
+            "y": 0,
+            "w": 45,
+            "h": 15
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 28.55614973262032
+      }
+    },
+    "15-B": {
+      "id": "15-B",
+      "sourceTileId": 15,
+      "parentId": "15",
+      "width": 60,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 120
+        },
+        "cutouts": [
+          {
+            "x": 15,
+            "y": 75,
+            "w": 45,
+            "h": 45
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 120
+      }
+    },
+    "7-C1": {
+      "id": "7-C1",
+      "sourceTileId": 7,
+      "parentId": "7-C",
+      "width": 17.627966101694916,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 17.627966101694916,
+          "h": 120
+        },
+        "cutouts": [
+          {
+            "x": 0,
+            "y": 0,
+            "w": 15,
+            "h": 45
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 42.372033898305084,
+        "y": 0,
+        "w": 17.627966101694916,
+        "h": 120
+      }
+    },
+    "5-B1": {
+      "id": "5-B1",
+      "sourceTileId": 5,
+      "parentId": "5-B",
+      "width": 12.50810810810811,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 12.50810810810811,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "w": 12.50810810810811,
+        "h": 120
+      }
+    },
+    "5-B2": {
+      "id": "5-B2",
+      "sourceTileId": 5,
+      "parentId": "5-B",
+      "width": 12.891891891891895,
+      "height": 120,
+      "geometry": {
+        "boundingBox": {
+          "w": 12.891891891891895,
+          "h": 120
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 29.808108108108108,
+        "y": 0,
+        "w": 12.891891891891895,
+        "h": 120
+      }
+    },
+    "9-B1a1": {
+      "id": "9-B1a1",
+      "sourceTileId": 9,
+      "parentId": "9-B1a",
+      "width": 60,
+      "height": 30.199999999999974,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 30.199999999999974
+        },
+        "cutouts": []
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 89.80000000000003,
+        "w": 60,
+        "h": 30.199999999999974
+      }
+    },
+    "9-B1a2": {
+      "id": "9-B1a2",
+      "sourceTileId": 9,
+      "parentId": "9-B1a",
+      "width": 60,
+      "height": 26.60000000000001,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 26.60000000000001
+        },
+        "cutouts": [
+          {
+            "x": 0,
+            "y": 0,
+            "w": 17.299999999999997,
+            "h": 26.60000000000001
+          },
+          {
+            "x": 17.299999999999994,
+            "y": 0,
+            "w": 17.3,
+            "h": 26.60000000000001
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 26.600000000000012,
+        "w": 60,
+        "h": 26.60000000000001
+      }
+    },
+    "9-B1a1a": {
+      "id": "9-B1a1a",
+      "sourceTileId": 9,
+      "parentId": "9-B1a1",
+      "width": 60,
+      "height": 30.199999999999974,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 30.199999999999974
+        },
+        "cutouts": [
+          {
+            "x": 0,
+            "y": 15.199999999999974,
+            "w": 45,
+            "h": 15
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 89.80000000000003,
+        "w": 60,
+        "h": 30.199999999999974
+      }
+    },
+    "17-B1a": {
+      "id": "17-B1a",
+      "sourceTileId": 17,
+      "parentId": "17-B1",
+      "width": 60,
+      "height": 83.39999999999999,
+      "geometry": {
+        "boundingBox": {
+          "w": 60,
+          "h": 83.39999999999999
+        },
+        "cutouts": [
+          {
+            "x": 0,
+            "y": 0,
+            "w": 58.599999999999994,
+            "h": 36.60000000000001
+          },
+          {
+            "x": 45,
+            "y": 36.60000000000001,
+            "w": 15,
+            "h": 45
+          }
+        ]
+      },
+      "imageRegion": {
+        "x": 0,
+        "y": 36.60000000000001,
+        "w": 60,
+        "h": 83.39999999999999
+      }
+    }
+  },
+  "walls": [
+    {
+      "id": "wall-1",
+      "name": "Wall 1",
+      "width": 75,
+      "height": 267,
+      "niche": null,
+      "remainderH": "split",
+      "remainderV": "top",
+      "tiles": {
+        "2,1": {
+          "pieceId": "13",
+          "rotation": 180,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "1,1": {
+          "pieceId": "10",
+          "rotation": 180,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "0,1": {
+          "pieceId": "14",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": -28.55614973262032
+        },
+        "0,0": {
+          "pieceId": "14-B",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "0,2": {
+          "pieceId": "14-B1",
+          "rotation": 0,
+          "offsetX": -52.7,
+          "offsetY": -1.9037433155080214
+        },
+        "1,2": {
+          "pieceId": "8-B1",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "1,0": {
+          "pieceId": "8-B1a",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "2,2": {
+          "pieceId": "16",
+          "rotation": 0,
+          "offsetX": -32.36363636363636,
+          "offsetY": 0
+        },
+        "2,0": {
+          "pieceId": "7",
+          "rotation": 0,
+          "offsetX": -35.07203389830509,
+          "offsetY": 0
+        }
+      }
+    },
+    {
+      "id": "wall-1777106916319",
+      "name": "Wall 4",
+      "width": 179,
+      "height": 277,
+      "niche": null,
+      "remainderH": "left",
+      "remainderV": "top",
+      "tiles": {
+        "2,1": {
+          "pieceId": "2",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "2,0": {
+          "pieceId": "4",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "2,2": {
+          "pieceId": "6",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "1,0": {
+          "pieceId": "1",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "1,1": {
+          "pieceId": "3",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "1,2": {
+          "pieceId": "18",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "0,1": {
+          "pieceId": "17",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "0,0": {
+          "pieceId": "17-B",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "0,2": {
+          "pieceId": "9-B1a",
+          "rotation": 180,
+          "offsetX": 0,
+          "offsetY": -30.199999999999974
+        }
+      }
+    },
+    {
+      "id": "wall-3",
+      "name": "Wall 3",
+      "width": 95,
+      "height": 267,
+      "niche": {
+        "width": 45,
+        "height": 45,
+        "depth": 15,
+        "fromFloor": 125,
+        "fromLeft": 25
+      },
+      "remainderH": "split",
+      "remainderV": "top",
+      "tiles": {
+        "2,1": {
+          "pieceId": "12",
+          "rotation": 180,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "2,2": {
+          "pieceId": "5",
+          "rotation": 0,
+          "offsetX": -42.7,
+          "offsetY": 0
+        },
+        "1,1": {
+          "pieceId": "11",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "1,2": {
+          "pieceId": "8",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "1,0": {
+          "pieceId": "8-B",
+          "rotation": 0,
+          "offsetX": -25.400000000000002,
+          "offsetY": 0
+        },
+        "2,0": {
+          "pieceId": "5-B",
+          "rotation": 0,
+          "offsetX": -12.50810810810811,
+          "offsetY": 0
+        },
+        "0,1": {
+          "pieceId": "9",
+          "rotation": 0,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        "0,2": {
+          "pieceId": "9-B",
+          "rotation": 0,
+          "offsetX": -42.7,
+          "offsetY": 0
+        },
+        "0,0": {
+          "pieceId": "9-B1",
+          "rotation": 0,
+          "offsetX": -25.400000000000002,
+          "offsetY": 0
+        }
+      },
+      "nicheTiles": {
+        "back": {
+          "0,0": {
+            "pieceId": "15",
+            "rotation": 0,
+            "offsetX": -15,
+            "offsetY": -75
+          }
+        },
+        "left": {
+          "0,0": {
+            "pieceId": "7-C",
+            "rotation": 0,
+            "offsetX": 0,
+            "offsetY": 0
+          }
+        },
+        "right": {
+          "0,0": {
+            "pieceId": "17-B1",
+            "rotation": 0,
+            "offsetX": -45,
+            "offsetY": -36.60000000000001
+          }
+        },
+        "top": {
+          "0,0": {
+            "pieceId": "9-B1a1",
+            "rotation": 0,
+            "offsetX": 0,
+            "offsetY": -15.199999999999974
+          }
+        },
+        "bottom": {
+          "0,0": {
+            "pieceId": "14-B1a",
+            "rotation": 0,
+            "offsetX": -7.3,
+            "offsetY": 0
+          }
+        }
+      }
+    }
+  ],
+  "toasts": [],
+  "sidebarWidth": 400
+}
