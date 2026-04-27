@@ -95,6 +95,17 @@ export function CutTileSection({
   const visibleRects: Rect[] = [];
   for (const piece of allPieces) {
     if (!placed.has(piece.id)) continue;
+    // Exclude the root piece's region from "visible" once any cuts exist.
+    // We also hide the root from the description list and visual label
+    // column for the same reason: its placement represents the abstract
+    // tile-as-source, and the user thinks of the top of that tile as
+    // waste, not a "piece in use." Grayed-out it is, then.
+    if (
+      piece.id === rootId &&
+      getChildPieces(pieces, piece.id).length > 0
+    ) {
+      continue;
+    }
     const elem = elemByPieceId.get(piece.id);
     if (!elem) continue;
     const ir = piece.imageRegion;
