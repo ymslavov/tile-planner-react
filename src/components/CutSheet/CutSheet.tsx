@@ -7,6 +7,11 @@ import { NichePage } from './NichePage';
 import { t } from './i18n';
 import styles from './CutSheet.module.css';
 
+interface CutSheetProps {
+  /** When true, render visibly on screen (not just for print). */
+  visibleOnScreen?: boolean;
+}
+
 /**
  * Multi-page cut sheet (print-only):
  *   1. Cover page with summary.
@@ -16,7 +21,7 @@ import styles from './CutSheet.module.css';
  *
  * All text in Bulgarian.
  */
-export function CutSheet() {
+export function CutSheet({ visibleOnScreen = false }: CutSheetProps = {}) {
   const pieces = useStore((s) => s.pieces);
   const walls = useStore((s) => s.walls);
   const orientation = useStore((s) => s.orientation);
@@ -29,7 +34,11 @@ export function CutSheet() {
   const nicheLabel = nicheMode === 'wrap-around' ? t.wrapAround : t.independent;
 
   return (
-    <div className={`${styles.cutSheet} print-only`}>
+    <div
+      className={`${styles.cutSheet} ${
+        visibleOnScreen ? styles.cutSheetOnScreen : 'print-only'
+      }`}
+    >
       {/* Cover */}
       <div className={`${styles.page} ${styles.coverPage}`}>
         <h1 className={styles.coverTitle}>{t.cutSheetTitle}</h1>

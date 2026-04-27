@@ -11,6 +11,7 @@ import './styles/index.css';
 
 function App() {
   const initialize = useStore((s) => s.initialize);
+  const cutMode = useStore((s) => s.cutMode);
 
   useEffect(() => {
     initialize();
@@ -20,13 +21,17 @@ function App() {
     <>
       <div className="no-print" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <TopBar />
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          <TilePool />
-          <WallView />
-          <SettingsPanel />
-        </div>
+        {cutMode ? (
+          <CutSheet visibleOnScreen />
+        ) : (
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            <TilePool />
+            <WallView />
+            <SettingsPanel />
+          </div>
+        )}
       </div>
-      <CutSheet />
+      {!cutMode && <CutSheet />}
       <ToastContainer />
       <CascadeModal />
     </>

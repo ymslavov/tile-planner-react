@@ -52,6 +52,8 @@ interface TilePlannerActions {
 
   // Navigation
   setActiveWall: (wallId: string) => void;
+  cutMode: boolean;
+  setCutMode: (mode: boolean) => void;
 
   // Orientation & niche mode
   setOrientation: (orientation: Orientation) => void;
@@ -150,6 +152,11 @@ export const useStore = create<Store>((set, get) => ({
   setActiveWall: (wallId) => {
     set({ activeWallId: wallId });
     get()._save();
+  },
+
+  cutMode: false,
+  setCutMode: (mode) => {
+    set({ cutMode: mode });
   },
 
   setOrientation: (orientation) => {

@@ -51,9 +51,12 @@ export function getCutSheetEntries(
     const allPieces: Piece[] = [rootPiece];
     collectDescendants(pieces, rootId, allPieces);
 
-    // Skip if no cuts
-    if (allPieces.length === 1 && getChildPieces(pieces, rootId).length === 0)
-      continue;
+    // Include the tile if any piece in the chain is placed. Whole-tile
+    // uses (root placed, no children) still get a section so the worker
+    // knows where the tile goes — the wall preview alone can be hard to
+    // cross-reference for a single tile.
+    const anyPlaced = allPieces.some((p) => placed.has(p.id));
+    if (!anyPlaced) continue;
 
     entries.push({ tileNumber: i, allPieces, placed });
   }

@@ -10,6 +10,8 @@ export function TopBar() {
   const doImportJSON = useStore((s) => s.doImportJSON);
   const clearAll = useStore((s) => s.clearAll);
   const walls = useStore((s) => s.walls);
+  const cutMode = useStore((s) => s.cutMode);
+  const setCutMode = useStore((s) => s.setCutMode);
 
   const handleOrientationChange = (newOrientation: 'portrait' | 'landscape') => {
     if (orientation === newOrientation) return;
@@ -83,6 +85,13 @@ export function TopBar() {
         </button>
         <button className="btn-secondary" onClick={doImportJSON}>
           Load JSON
+        </button>
+        <button
+          className={`btn-toggle ${cutMode ? 'active' : ''}`}
+          onClick={() => setCutMode(!cutMode)}
+          title="Toggle on-screen Cut Sheet preview"
+        >
+          {cutMode ? 'Exit Cut Mode' : 'Cut Mode'}
         </button>
         <button className="btn-primary" onClick={handlePrint}>
           Print Cut Sheet
