@@ -177,6 +177,14 @@ placed piece showing the underlying tile pattern (clipped to the visible
 portion via overflow-hidden), and a piece-ID pill badge anchored top-left
 inside each piece.
 
+**Tile rotation** (`placement.rotation`, in degrees) is applied to the
+source-tile `<img>` via a CSS `transform: rotate(N deg)` with the
+`transform-origin` set to the slot center expressed in image-local
+coordinates: `((ir.x − offsetX + slotW/2) * scale, (ir.y − offsetY +
+slotH/2) * scale)`. Same math as the planning-mode `TileImage` portrait
+branch. The piece-ID badge stays UNROTATED (it sits on the slot wrapper,
+outside the transform), so it always reads the right-way-up.
+
 The legend on the right lists every placed piece with the same piece-ID
 pill marker, the used dimensions, and the source tile number.
 
@@ -189,10 +197,18 @@ custom names through unchanged.
 ## Niche page
 
 For walls with niches: the five surfaces (back, left, right, top, bottom)
-unfold around the back surface in a cross layout. Tiles are rendered as
-**CSS background-image** on a div sized to the surface — background images
-clip naturally to the box and Chrome's PDF engine handles them reliably.
-(`<img>` + `overflow: hidden` was unreliable in print.)
+unfold around the back surface in a cross layout.
+
+For UNROTATED placements, tiles are rendered as **CSS background-image**
+on a div sized to the surface — background images clip naturally to the
+box and Chrome's PDF engine handles them reliably. (`<img>` + `overflow:
+hidden` was unreliable in print.)
+
+For ROTATED placements (`placement.rotation !== 0`) we fall back to a
+positioned `<img>` inside an `overflow:hidden` + `clip-path: inset(0)`
+wrapper, with the same rotation math as the wall preview. CSS transforms
+don't apply to `background-image` position alone, so the rotated case
+needs a transform-able element.
 
 `print-color-adjust: exact` is forced everywhere on the cut sheet so
 backgrounds print regardless of the user's "Background graphics" print-dialog

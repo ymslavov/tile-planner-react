@@ -66,6 +66,21 @@ export function WallPreviewPage({
             const ir = piece.imageRegion;
             const offsetX = b.placement.offsetX ?? 0;
             const offsetY = b.placement.offsetY ?? 0;
+            const rotation = b.placement.rotation || 0;
+            // Match planning-mode TileImage: rotate the source image around
+            // the slot's center expressed in image-local coordinates. Slot
+            // top-left in image coords is (offsetX − ir.x, offsetY − ir.y),
+            // so slot center is (ir.x − offsetX + slotW/2, ir.y − offsetY +
+            // slotH/2) inside the 60×120 image space, then scaled to mm.
+            const rotStyle: React.CSSProperties =
+              rotation !== 0
+                ? {
+                    transform: `rotate(${rotation}deg)`,
+                    transformOrigin: `${
+                      (ir.x - offsetX + b.w / 2) * scale
+                    }mm ${(ir.y - offsetY + b.h / 2) * scale}mm`,
+                  }
+                : {};
             return (
               <div
                 key={b.num}
@@ -88,6 +103,7 @@ export function WallPreviewPage({
                     top: `${(offsetY - ir.y) * scale}mm`,
                     width: `${60 * scale}mm`,
                     height: `${120 * scale}mm`,
+                    ...rotStyle,
                   }}
                 />
                 <div className={styles.elementBadge}>{b.piece.id}</div>

@@ -207,27 +207,62 @@ function NicheSurfaceCell({
           const ir = piece.imageRegion;
           const offsetX = placement.offsetX ?? 0;
           const offsetY = placement.offsetY ?? 0;
-          // Render the tile as a background-image of a div sized to the
-          // surface. background-image is naturally clipped to the element's
-          // box (no fragile overflow-of-absolute-children dance), and Chrome's
-          // PDF engine handles it reliably. Position the background so that
-          // tile coord (0,0) lands at surface coord (offsetX - ir.x, offsetY - ir.y),
-          // i.e. the piece's top-left in the slot, minus the piece's offset
-          // into the source tile.
-          const bgX = (offsetX - ir.x) * scale;
-          const bgY = (offsetY - ir.y) * scale;
+          const rotation = placement.rotation || 0;
+
+          if (rotation === 0) {
+            // Unrotated: keep the bullet-proof background-image approach
+            // (Chrome's PDF engine clips it natively to the box, no fragile
+            // overflow-of-absolute-children).
+            const bgX = (offsetX - ir.x) * scale;
+            const bgY = (offsetY - ir.y) * scale;
+            return (
+              <div
+                key={slotKey}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundImage: `url(${tileImageUrl(piece.sourceTileId)})`,
+                  backgroundSize: `${60 * scale}mm ${120 * scale}mm`,
+                  backgroundPosition: `${bgX}mm ${bgY}mm`,
+                  backgroundRepeat: 'no-repeat',
+                }}
+              />
+            );
+          }
+
+          // Rotated: an <img> inside an overflow:hidden + clip-path wrapper.
+          // CSS transforms don't apply to background-image position alone, so
+          // we render the source tile as a positioned img and rotate it
+          // around the surface center, exactly like the wall preview does.
+          // clip-path: inset(0) belt-and-suspenders the surface clipping
+          // since print engines sometimes mis-clip rotated abs-positioned
+          // children.
           return (
             <div
               key={slotKey}
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundImage: `url(${tileImageUrl(piece.sourceTileId)})`,
-                backgroundSize: `${60 * scale}mm ${120 * scale}mm`,
-                backgroundPosition: `${bgX}mm ${bgY}mm`,
-                backgroundRepeat: 'no-repeat',
+                overflow: 'hidden',
+                clipPath: 'inset(0)',
               }}
-            />
+            >
+              <img
+                src={tileImageUrl(piece.sourceTileId)}
+                alt=""
+                style={{
+                  position: 'absolute',
+                  left: `${(offsetX - ir.x) * scale}mm`,
+                  top: `${(offsetY - ir.y) * scale}mm`,
+                  width: `${60 * scale}mm`,
+                  height: `${120 * scale}mm`,
+                  transform: `rotate(${rotation}deg)`,
+                  transformOrigin: `${(ir.x - offsetX + wCm / 2) * scale}mm ${
+                    (ir.y - offsetY + hCm / 2) * scale
+                  }mm`,
+                }}
+              />
+            </div>
           );
         })}
         {/* Badges anchored to the surface (not the piece container) so they
