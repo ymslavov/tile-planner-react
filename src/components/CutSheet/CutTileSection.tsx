@@ -79,6 +79,28 @@ export function CutTileSection({
     cuts.push({ x, y, w, h, pieceId, elementNum });
   };
 
+  // hasPlacedInSubtree(pieceId): true if pieceId itself or any descendant
+  // is placed. Used by the cut-rendering loop to skip cutlines for unused
+  // offcut chains (otherwise stray boundaries appear inside placed regions).
+  const hasPlacedInSubtree = (pieceId: string): boolean => {
+    if (placed.has(pieceId)) return true;
+    for (const c of getChildPieces(pieces, pieceId)) {
+      if (hasPlacedInSubtree(c.id)) return true;
+    }
+    return false;
+  };
+  // True iff any descendant (NOT the piece itself) is placed. Used to tell
+  // "tile cut into multiple placed pieces" (treat root as tile-as-source)
+  // apart from "tile used whole, with stray unplaced offcuts" (root is the
+  // actual element).
+  const hasPlacedChildPiece = (pieceId: string): boolean => {
+    for (const c of getChildPieces(pieces, pieceId)) {
+      if (placed.has(c.id) || hasPlacedChildPiece(c.id)) return true;
+    }
+    return false;
+  };
+  const rootIsTileSource = hasPlacedChildPiece(rootId);
+
   // Identify "unused" regions of the tile.
   //
   // For each PLACED piece, compute the rectangle that's actually visible in
@@ -95,15 +117,12 @@ export function CutTileSection({
   const visibleRects: Rect[] = [];
   for (const piece of allPieces) {
     if (!placed.has(piece.id)) continue;
-    // Exclude the root piece's region from "visible" once any cuts exist.
-    // We also hide the root from the description list and visual label
-    // column for the same reason: its placement represents the abstract
-    // tile-as-source, and the user thinks of the top of that tile as
-    // waste, not a "piece in use." Grayed-out it is, then.
-    if (
-      piece.id === rootId &&
-      getChildPieces(pieces, piece.id).length > 0
-    ) {
+    // Exclude the root piece's region from "visible" only when the tile
+    // has been cut into multiple PLACED pieces. If the only sub-pieces are
+    // unplaced stray offcuts (e.g., a 1.4 cm strip from a pixel-perfect
+    // re-fit), the root's placement is genuine "tile used whole" and
+    // should remain in the mask.
+    if (piece.id === rootId && rootIsTileSource) {
       continue;
     }
     const elem = elemByPieceId.get(piece.id);
@@ -152,14 +171,6 @@ export function CutTileSection({
   // have a placed descendant). Unused offcuts shouldn't contribute cutlines
   // — otherwise stray boundaries appear inside the regions of placed
   // pieces, looking like rendering bugs.
-  const hasPlacedInSubtree = (pieceId: string): boolean => {
-    if (placed.has(pieceId)) return true;
-    for (const c of getChildPieces(pieces, pieceId)) {
-      if (hasPlacedInSubtree(c.id)) return true;
-    }
-    return false;
-  };
-
   for (const piece of allPieces) {
     // 1. Child bounding boxes (the cut that separates this piece from its siblings)
     const children = getChildPieces(pieces, piece.id);
@@ -238,13 +249,13 @@ export function CutTileSection({
   // does occupy a region in the tile). The centroid points at the part of
   // the tile actually used for that placement, so nested offcuts don't all
   // stack on the same dot.
-  // Match the description-list rule: drop the root piece's label once any
-  // cuts exist so the tile visual and the side list show the same set of
-  // entries.
-  const rootHasChildren = getChildPieces(pieces, rootId).length > 0;
+  // Match the description-list rule: drop the root piece's label only when
+  // the tile has been cut into multiple PLACED pieces (rootIsTileSource).
+  // If the only sub-pieces are unplaced stray offcuts, the root is being
+  // used whole and gets a real label like any other element.
   const labelsToPlace = elements
     .filter((e) => e.piece.sourceTileId === tileNumber)
-    .filter((e) => !(rootHasChildren && e.pieceId === rootId))
+    .filter((e) => !(rootIsTileSource && e.pieceId === rootId))
     .map((e) => {
       const centroid = placedPieceCentroidInTile(
         e.piece,
@@ -413,15 +424,12 @@ export function CutTileSection({
           // visualized via the gray-out on the tile image and the bottom
           // "unused area" footer; listing them as separate entries is noise.
           if (!pl) return null;
-          // Hide the root "whole tile" entry (id == tileNumber) once any
-          // cuts exist — its only role at that point is to label the
-          // remainder/leftover, which the user already sees as a region on
-          // the tile image. Listing the whole-tile entry alongside the
-          // actual cuts is confusing.
-          if (
-            piece.id === rootId &&
-            getChildPieces(pieces, piece.id).length > 0
-          ) {
+          // Hide the root "whole tile" entry only when the tile has been
+          // cut into multiple PLACED pieces — in that case the root is
+          // tile-as-source and listing it alongside the cuts is noise.
+          // If the only sub-pieces are unplaced stray offcuts, keep the
+          // root entry: the user is using the tile whole.
+          if (piece.id === rootId && rootIsTileSource) {
             return null;
           }
           const wall = walls.find((w) => w.id === pl.wall.id);
