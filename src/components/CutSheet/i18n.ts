@@ -41,7 +41,7 @@ export const t = {
   element: 'Елемент',
   elements: 'Елементи',
   elementList: 'Списък на елементите',
-  pieceLabel: 'Парче',
+  pieceLabel: 'Плочка',
   dimensions: 'Размери',
   position: 'Позиция',
   rotation: 'Ротация',
