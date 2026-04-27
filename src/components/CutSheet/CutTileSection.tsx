@@ -227,8 +227,13 @@ export function CutTileSection({
   // does occupy a region in the tile). The centroid points at the part of
   // the tile actually used for that placement, so nested offcuts don't all
   // stack on the same dot.
+  // Match the description-list rule: drop the root piece's label once any
+  // cuts exist so the tile visual and the side list show the same set of
+  // entries.
+  const rootHasChildren = getChildPieces(pieces, rootId).length > 0;
   const labelsToPlace = elements
     .filter((e) => e.piece.sourceTileId === tileNumber)
+    .filter((e) => !(rootHasChildren && e.pieceId === rootId))
     .map((e) => {
       const centroid = placedPieceCentroidInTile(
         e.piece,
