@@ -115,13 +115,11 @@ export function CutTileSection({
   // its placed ancestor.
   type Rect = { x: number; y: number; w: number; h: number };
   const visibleRects: Rect[] = [];
+  // Map placed-piece-id → visible rect in tile coords. Lets cutline drawing
+  // (further below) reuse exactly what the gray-out mask treats as used.
+  const visibleByPieceId = new Map<string, Rect>();
   for (const piece of allPieces) {
     if (!placed.has(piece.id)) continue;
-    // Exclude the root piece's region from "visible" only when the tile
-    // has been cut into multiple PLACED pieces. If the only sub-pieces are
-    // unplaced stray offcuts (e.g., a 1.4 cm strip from a pixel-perfect
-    // re-fit), the root's placement is genuine "tile used whole" and
-    // should remain in the mask.
     if (piece.id === rootId && rootIsTileSource) {
       continue;
     }
@@ -133,28 +131,29 @@ export function CutTileSection({
     const isRotated =
       Math.abs(piece.width - ir.w) > 0.01 &&
       Math.abs(piece.width - ir.h) < 0.01;
-    // Visible portion in piece-local coords (axis-aligned to the piece).
     const vxL = Math.max(0, -offX);
     const vyT = Math.max(0, -offY);
     const vxR = Math.min(piece.width, elem.slotW - offX);
     const vyB = Math.min(piece.height, elem.slotH - offY);
     if (vxR <= vxL || vyB <= vyT) continue;
+    let rect: Rect;
     if (isRotated) {
-      // 90° CW: piece-local (x,y) → tile (ir.x + ir.w - y - h, ir.y + x).
-      visibleRects.push({
+      rect = {
         x: ir.x + ir.w - vyB,
         y: ir.y + vxL,
         w: vyB - vyT,
         h: vxR - vxL,
-      });
+      };
     } else {
-      visibleRects.push({
+      rect = {
         x: ir.x + vxL,
         y: ir.y + vyT,
         w: vxR - vxL,
         h: vyB - vyT,
-      });
+      };
     }
+    visibleRects.push(rect);
+    visibleByPieceId.set(piece.id, rect);
   }
 
   // Total used area on the tile is the sum of visibleRects' areas (assuming
@@ -167,57 +166,52 @@ export function CutTileSection({
   // Unique mask id per tile so multiple cut sheets in one DOM don't collide.
   const maskId = `unused-mask-${tileNumber}`;
 
-  // Only draw cutlines for child pieces that are actually used (placed or
-  // have a placed descendant). Unused offcuts shouldn't contribute cutlines
-  // — otherwise stray boundaries appear inside the regions of placed
-  // pieces, looking like rendering bugs.
+  // Cutlines mirror the actually-USED rectangles, NOT each piece's full
+  // imageRegion. Workers need to cut the size that's installed; outlining
+  // the larger imageRegion when the slot trims the piece down would tell
+  // them to cut a bigger piece than necessary and confuse the boundary
+  // with the grayed-out region.
   for (const piece of allPieces) {
-    // 1. Child bounding boxes (the cut that separates this piece from its siblings)
-    const children = getChildPieces(pieces, piece.id);
-    for (const child of children) {
-      if (!hasPlacedInSubtree(child.id)) continue;
-      const cr = child.imageRegion;
-      addCut(
-        cr.x,
-        cr.y,
-        cr.w,
-        cr.h,
-        child.id,
-        elemByPieceId.get(child.id)?.num ?? null
-      );
-    }
+    if (!placed.has(piece.id)) continue;
+    if (piece.id === rootId && rootIsTileSource) continue;
+    const vr = visibleByPieceId.get(piece.id);
+    if (!vr) continue;
+    addCut(
+      vr.x,
+      vr.y,
+      vr.w,
+      vr.h,
+      piece.id,
+      elemByPieceId.get(piece.id)?.num ?? null
+    );
 
-    // 2. Cutouts inside this piece (notches — additional cut lines needed to
-    //    physically cut the piece's L/U/frame shape from its rectangular bounding
-    //    box). Cutout coords are in the piece's local coord system, which may
-    //    differ from the tile coord system if the piece is rotated relative to
-    //    its imageRegion (when piece.width != imageRegion.w).
-    //    Same filter as child cuts: only draw cutouts for pieces actually in
-    //    use (placed or with a placed descendant) — otherwise stray notch
-    //    rectangles for unused offcuts pollute the visualization.
-    if (!hasPlacedInSubtree(piece.id)) continue;
-    if (piece.geometry.cutouts.length > 0) {
-      const ir = piece.imageRegion;
-      const isRotated =
-        Math.abs(piece.width - ir.w) > 0.01 &&
-        Math.abs(piece.width - ir.h) < 0.01;
-      for (const co of piece.geometry.cutouts) {
-        let cx: number, cy: number, cw: number, ch: number;
-        if (isRotated) {
-          // Piece is rotated 90° within its imageRegion (CW): piece-local (x,y)
-          // maps to tile (ir.x + ir.w - y - h, ir.y + x), and dimensions swap.
-          cx = ir.x + ir.w - co.y - co.h;
-          cy = ir.y + co.x;
-          cw = co.h;
-          ch = co.w;
-        } else {
-          cx = ir.x + co.x;
-          cy = ir.y + co.y;
-          cw = co.w;
-          ch = co.h;
-        }
-        addCut(cx, cy, cw, ch, `${piece.id}-co`, null);
+    // Notches (cutouts) are part of the piece's geometry — but only those
+    // that fall within the visible rect represent cuts the worker actually
+    // makes. When the piece is trimmed by its slot, notches outside the
+    // visible region are on discarded material and would mislead.
+    if (piece.geometry.cutouts.length === 0) continue;
+    const ir = piece.imageRegion;
+    const isRotated =
+      Math.abs(piece.width - ir.w) > 0.01 &&
+      Math.abs(piece.width - ir.h) < 0.01;
+    for (const co of piece.geometry.cutouts) {
+      let cx: number, cy: number, cw: number, ch: number;
+      if (isRotated) {
+        cx = ir.x + ir.w - co.y - co.h;
+        cy = ir.y + co.x;
+        cw = co.h;
+        ch = co.w;
+      } else {
+        cx = ir.x + co.x;
+        cy = ir.y + co.y;
+        cw = co.w;
+        ch = co.h;
       }
+      // Skip notches that don't overlap the visible rect.
+      const ox = Math.max(0, Math.min(cx + cw, vr.x + vr.w) - Math.max(cx, vr.x));
+      const oy = Math.max(0, Math.min(cy + ch, vr.y + vr.h) - Math.max(cy, vr.y));
+      if (ox <= 0.01 || oy <= 0.01) continue;
+      addCut(cx, cy, cw, ch, `${piece.id}-co`, null);
     }
   }
 

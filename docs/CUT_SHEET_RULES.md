@@ -113,26 +113,35 @@ appears in unused areas.
 
 ## Cutlines (red dashed rectangles drawn on the tile image)
 
-Two sources contribute cutline rectangles:
+Cutlines must match what the worker physically cuts. **Cutlines are the
+visible rectangles, not the imageRegions.** A piece's `imageRegion`
+describes the part of the source tile the piece comes from (its full
+bounding box on the tile). When the slot trims the piece, the worker
+needs to cut to the trimmed (visible) size, not the full piece size.
+Outlining the imageRegion when it's larger than the visible rectangle
+creates a phantom "outer cut" and makes the dashed boundary disagree
+with the opaque region.
 
-### 1. Child bounding boxes
+### 1. Visible rectangles
 
-For each piece in the chain, for each of its children:
+For each placed piece (excluding root-as-source), look up its visible
+rect in `visibleByPieceId` (the same map the gray-out mask uses to
+punch holes) and `addCut` a rectangle at that rect's coords.
 
-- Skip the child if **no placed piece exists in its subtree** (`!hasPlacedInSubtree(child.id)`).
-- Otherwise, draw a dashed rect at `child.imageRegion`.
+Same dedup as before — if multiple placements happen to map to the
+same tile rect, only one cutline is drawn.
 
-Cutlines for unused-offcut chains are filtered out — they create stray
-boundaries that bleed across placed regions and look like rendering bugs.
+### 2. Cutouts (notches) — with intersection filter
 
-### 2. Cutouts (notches)
+For each placed piece's `geometry.cutouts`, compute the cutout's
+position in tile coords (with 90° rotation handling when
+`piece.width != imageRegion.w`). **Skip the cutout if it doesn't
+overlap the piece's visible rect** — a notch on discarded material
+isn't a cut the worker has to make.
 
-For each piece that itself has at least one placed piece in its subtree
-(`hasPlacedInSubtree(piece.id)`), draw a rect for each entry in
-`piece.geometry.cutouts`. Apply the same rotation handling as above.
-
-Notches turn rectangular pieces into L-shapes / U-shapes / frames. They're
-real cuts the worker must make.
+Notches that DO fall within the visible region (e.g., a niche-wrap
+piece installed whole with an L-shape cut into it) are drawn as their
+own dashed rectangle.
 
 ### Deduplication
 
