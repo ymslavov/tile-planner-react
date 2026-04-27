@@ -95,15 +95,15 @@ for (const tileId of [...tilesUsed].sort((a, b) => a - b)) {
     const usedBottom = Math.min(piece.height, elem.slotH - offY);
     const dispW = Math.max(0, usedRight - usedLeft);
     const dispH = Math.max(0, usedBottom - usedTop);
-    const fromLeft = elem.slotX + Math.max(0, offX);
-    const fromTop = elem.slotY + Math.max(0, offY);
+    // Cut start on the source tile (NOT the wall) — equals the visible
+    // rect's top-left in tile coords.
     const vr = visibleRectInTile(piece, elem.slotW, elem.slotH, elem.placement);
     expected.listed.push({
       pieceId: piece.id,
       dispW: +dispW.toFixed(1),
       dispH: +dispH.toFixed(1),
-      fromLeft: +fromLeft.toFixed(1),
-      fromTop: +fromTop.toFixed(1),
+      cutFromLeft: vr ? +vr.x.toFixed(1) : null,
+      cutFromTop: vr ? +vr.y.toFixed(1) : null,
       wallName: elem.wall.name,
       surface: elem.surface,
     });
@@ -174,15 +174,17 @@ for (const exp of report) {
       console.log(`tile ${exp.tileId} ${l.pieceId}: DIM mismatch — expected "${expDim}", got "${e.dims}"`);
       issues++;
     }
-    const expL = `${l.fromLeft.toFixed(1)} см от ляво`;
-    const expT = `${l.fromTop.toFixed(1)} см от горе`;
-    if (!e.info.includes(expL)) {
-      console.log(`tile ${exp.tileId} ${l.pieceId}: fromLeft mismatch — expected "${expL}", got info "${e.info}"`);
-      issues++;
-    }
-    if (!e.info.includes(expT)) {
-      console.log(`tile ${exp.tileId} ${l.pieceId}: fromTop mismatch — expected "${expT}", got info "${e.info}"`);
-      issues++;
+    if (l.cutFromLeft !== null) {
+      const expL = `${l.cutFromLeft.toFixed(1)} см от ляво на плочката`;
+      const expT = `${l.cutFromTop.toFixed(1)} см от горе на плочката`;
+      if (!e.info.includes(expL)) {
+        console.log(`tile ${exp.tileId} ${l.pieceId}: cut-fromLeft mismatch — expected "${expL}", got info "${e.info}"`);
+        issues++;
+      }
+      if (!e.info.includes(expT)) {
+        console.log(`tile ${exp.tileId} ${l.pieceId}: cut-fromTop mismatch — expected "${expT}", got info "${e.info}"`);
+        issues++;
+      }
     }
   }
 

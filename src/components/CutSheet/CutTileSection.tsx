@@ -470,15 +470,23 @@ export function CutTileSection({
               <p className={styles.pieceInfo}>
                 <strong>{t.position}:</strong> {wallName}
                 {pl.surface ? `, ${t.surfaceLabels(pl.surface)}` : ''}
-                {elem &&
-                  (() => {
-                    // Position of the piece's used (visible) top-left corner
-                    // within the wall (or niche surface) — "X cm from left,
-                    // Y cm from top". Computed from slot.x + max(0, offset).
-                    const fromLeft = elem.slotX + Math.max(0, offX);
-                    const fromTop = elem.slotY + Math.max(0, offY);
-                    return ` · ${fromLeft.toFixed(1)} см ${t.fromLeft}, ${fromTop.toFixed(1)} см ${t.fromTop}`;
-                  })()}
+                {(() => {
+                  // Cut-start position on the SOURCE TILE — where the worker
+                  // marks the cut on the raw tile. Equals the visible rect's
+                  // top-left in tile coords. Note this is the cut on the
+                  // source tile, NOT the position on the wall (which is also
+                  // reachable but not what workers need at the cutting table).
+                  const vr = visibleByPieceId.get(piece.id);
+                  if (!vr) return null;
+                  return (
+                    <>
+                      <br />
+                      <strong>{t.cutOnTile}:</strong>{' '}
+                      {vr.x.toFixed(1)} см {t.fromLeftOfTile},{' '}
+                      {vr.y.toFixed(1)} см {t.fromTopOfTile}
+                    </>
+                  );
+                })()}
               </p>
             </div>
           );

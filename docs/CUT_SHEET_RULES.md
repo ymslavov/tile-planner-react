@@ -68,13 +68,14 @@ For each listed piece, the entry shows:
   ```
 - A `(остатък)` suffix iff the piece is the root AND has children AND is
   placed with non-zero offset (i.e., a leftover after cutting).
-- **Position**: wall name (Bulgarian-translated) + niche surface label if any +
-  `X cm от ляво, Y cm от горе` where:
-  ```
-  fromLeft = slotX + max(0, offX)
-  fromTop  = slotY + max(0, offY)
-  ```
-  These are the visible-portion's top-left in wall (or niche-surface) coords.
+- **Position**: wall name (Bulgarian-translated) + niche surface label if any.
+  Tells the worker which wall the cut piece installs on. No wall coordinates
+  shown — the cut sheet is read at the cutting table, where the relevant
+  numbers are the cut on the SOURCE TILE, not the wall.
+- **Cut start on source tile** (`Срез`): `vr.x cm от ляво на плочката,
+  vr.y cm от горе на плочката` — the visible rect's top-left in source-tile
+  coordinates. Together with the used dims this fully specifies the cut:
+  start at this point on the tile, cut a rectangle of (dispW × dispH).
 
 Offset/rotation values are **not** shown. They're an internal data-model
 detail; the worker only cares about size and where to install.

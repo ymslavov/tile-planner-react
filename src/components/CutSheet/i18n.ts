@@ -34,6 +34,9 @@ export const t = {
   fromFloor: 'От пода',
   fromLeft: 'от ляво',
   fromTop: 'от горе',
+  cutOnTile: 'Срез',
+  fromLeftOfTile: 'от ляво на плочката',
+  fromTopOfTile: 'от горе на плочката',
 
   element: 'Елемент',
   elements: 'Елементи',
