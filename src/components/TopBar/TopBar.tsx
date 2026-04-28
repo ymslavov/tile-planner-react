@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useStore } from '../../store';
 import styles from './TopBar.module.css';
 
@@ -34,8 +35,28 @@ export function TopBar() {
     clearAll();
   };
 
-  const handlePrint = () => {
-    window.print();
+  const [exporting, setExporting] = useState(false);
+  const handleExportPdf = async () => {
+    if (!cutMode) {
+      // Auto-toggle Cut Mode so the on-screen pages exist to snapshot,
+      // then export. Don't auto-toggle off — the user might want to
+      // verify before downloading again.
+      setCutMode(true);
+      // Wait one paint frame so the new DOM exists before snapshotting.
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    }
+    setExporting(true);
+    try {
+      // Lazy-load the PDF libs only when the user actually exports —
+      // otherwise html2canvas + jsPDF bloat the initial bundle.
+      const mod = await import('../../services/exportCutSheetPdf');
+      await mod.exportCutSheetPdfFromDOM();
+    } catch (err) {
+      alert(`PDF export failed: ${(err as Error).message}`);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -93,8 +114,13 @@ export function TopBar() {
         >
           {cutMode ? 'Exit Cut Mode' : 'Cut Mode'}
         </button>
-        <button className="btn-primary" onClick={handlePrint}>
-          Print Cut Sheet
+        <button
+          className="btn-primary"
+          onClick={handleExportPdf}
+          disabled={exporting}
+          title="Render the cut sheet exactly as shown in Cut Mode to a downloadable PDF"
+        >
+          {exporting ? 'Rendering…' : 'Export PDF'}
         </button>
         <button className="btn-clear" onClick={handleClear}>
           Clear All

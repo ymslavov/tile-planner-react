@@ -81,23 +81,29 @@ export function CutSheet({ visibleOnScreen = false }: CutSheetProps = {}) {
           />
         ))}
 
-      {/* Per-tile cut sheets */}
-      <div className={styles.page}>
-        <h1 className={styles.pageTitle}>{t.cuts}</h1>
-        {entries.length === 0 && <p>—</p>}
-        {entries.map((entry) => (
-          <CutTileSection
-            key={entry.tileNumber}
-            tileNumber={entry.tileNumber}
-            allPieces={entry.allPieces}
-            pieces={pieces}
-            walls={walls}
-            placed={entry.placed}
-            orientation={orientation}
-            elements={elements}
-          />
-        ))}
-      </div>
+      {/* Per-tile cut sheets — each tile gets its own A4 page so the PDF
+          export emits one tile per printed page (instead of stacking
+          everything onto a single oversized page). */}
+      {entries.length === 0 ? (
+        <div className={styles.page}>
+          <h1 className={styles.pageTitle}>{t.cuts}</h1>
+          <p>—</p>
+        </div>
+      ) : (
+        entries.map((entry) => (
+          <div className={styles.page} key={`tile-${entry.tileNumber}`}>
+            <CutTileSection
+              tileNumber={entry.tileNumber}
+              allPieces={entry.allPieces}
+              pieces={pieces}
+              walls={walls}
+              placed={entry.placed}
+              orientation={orientation}
+              elements={elements}
+            />
+          </div>
+        ))
+      )}
     </div>
   );
 }
