@@ -46,16 +46,26 @@ export async function exportCutSheetPdfFromDOM(): Promise<void> {
       logging: false,
     });
 
-    // Scale the canvas to A4 width while preserving aspect ratio. If the
-    // captured page is taller than A4 (it shouldn't be, since each .page
-    // is 297mm), let it overflow — jsPDF will clip; the cut sheet pages
-    // are sized 210x297mm by design so this is a no-op in practice.
-    const imgData = canvas.toDataURL('image/png');
+    // JPEG at 0.85 instead of PNG. Marble patterns are photographic and
+    // compress losslessly very poorly — a typical PNG cut sheet was
+    // ~10 MB per page (= ~230 MB for a 23-page export). JPEG at this
+    // quality is visually indistinguishable for these images and ~10x
+    // smaller. addImage's last "FAST" arg further reduces overhead.
+    const imgData = canvas.toDataURL('image/jpeg', 0.85);
     const imgWmm = pageW;
     const imgHmm = (canvas.height / canvas.width) * imgWmm;
 
     if (i > 0) pdf.addPage();
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWmm, Math.min(imgHmm, pageH));
+    pdf.addImage(
+      imgData,
+      'JPEG',
+      0,
+      0,
+      imgWmm,
+      Math.min(imgHmm, pageH),
+      undefined,
+      'FAST'
+    );
   }
 
   pdf.save('cut-sheet.pdf');
