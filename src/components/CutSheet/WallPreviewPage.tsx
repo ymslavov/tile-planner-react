@@ -106,7 +106,7 @@ export function WallPreviewPage({
                     ...rotStyle,
                   }}
                 />
-                <div className={styles.elementBadge}>{b.piece.id}</div>
+                <div className={styles.elementBadge}>{b.displayId}</div>
               </div>
             );
           })}
@@ -133,7 +133,7 @@ export function WallPreviewPage({
           )}
           {wallElements.map((e) => (
             <div key={e.pieceId} className={styles.legendRow}>
-              <span className={styles.legendNum}>{e.pieceId}</span>
+              <span className={styles.legendNum}>{e.displayId}</span>
               <div className={styles.legendInfo}>
                 <div className={styles.legendDims}>
                   {e.piece.width.toFixed(1)} × {e.piece.height.toFixed(1)} см

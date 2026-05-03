@@ -6,7 +6,8 @@ import type {
   Orientation,
 } from '../store/types';
 import { computeGrid, computeNicheOverlap } from './gridEngine';
-import { getEffectiveDims } from './pieceHelpers';
+import { getEffectiveDims, getPlacedPieceIds } from './pieceHelpers';
+import { getDisplayPieceId } from './displayId';
 
 /**
  * Element list for the cut sheet — every placed piece across all walls and
@@ -27,6 +28,9 @@ export interface ElementEntry {
   // placed piece's actual position on the wall ("X cm from left, Y from top").
   slotX: number;
   slotY: number;
+  // Visual label — defaults to pieceId. Equals "${pieceId}-A" when the root
+  // of a tile chain is placed AND has placed descendants (see displayId.ts).
+  displayId: string;
 }
 
 /**
@@ -40,6 +44,7 @@ export function buildElementList(
 ): ElementEntry[] {
   const result: ElementEntry[] = [];
   let num = 1;
+  const placedIds = getPlacedPieceIds(walls);
 
   for (const wall of walls) {
     const wallGrid = computeGrid(wall, orientation);
@@ -63,6 +68,7 @@ export function buildElementList(
         slotH: slot.h,
         slotX: slot.x,
         slotY: slot.y,
+        displayId: getDisplayPieceId(piece, pieces, placedIds),
       });
     }
 
@@ -101,6 +107,7 @@ export function buildElementList(
             slotH: slot.h,
             slotX: slot.x,
             slotY: slot.y,
+            displayId: getDisplayPieceId(piece, pieces, placedIds),
           });
         }
       }
@@ -118,6 +125,7 @@ export interface WallPlacementBox {
   num: number;
   piece: Piece;
   placement: Placement;
+  displayId: string;
   // wall-local coords in cm
   x: number;
   y: number;
@@ -148,6 +156,7 @@ export function computeWallPlacements(
       num: e.num,
       piece: e.piece,
       placement: e.placement,
+      displayId: e.displayId,
       x: slot.x,
       y: slot.y,
       w: slot.w,

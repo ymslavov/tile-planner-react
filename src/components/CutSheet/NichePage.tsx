@@ -147,7 +147,7 @@ export function NichePage({ wall, pieces, elements }: NichePageProps) {
           <h3>{t.elementList}</h3>
           {nicheElements.map((e) => (
             <div key={e.pieceId} className={styles.legendRow}>
-              <span className={styles.legendNum}>{e.pieceId}</span>
+              <span className={styles.legendNum}>{e.displayId}</span>
               <div className={styles.legendInfo}>
                 <div className={styles.legendDims}>
                   {e.piece.width.toFixed(1)} × {e.piece.height.toFixed(1)} см ·{' '}
@@ -275,7 +275,7 @@ function NicheSurfaceCell({
             className={styles.elementBadge}
             style={{ top: '1mm', left: `${1 + i * 14}mm` }}
           >
-            {e.pieceId}
+            {e.displayId}
           </div>
         ))}
       </div>

@@ -73,7 +73,10 @@ for (const tileId of [...tilesUsed].sort((a, b) => a - b)) {
   const root = fixture.pieces[rootId];
   if (!root) continue;
   const allPiecesInChain = Object.values(fixture.pieces).filter((p) => p.sourceTileId === tileId);
-  const rootIsTileSource = hasPlacedChildPiece(rootId);
+  // Root is "tile-as-source" only when it has placed descendants AND is
+  // itself unplaced. When the root is placed it represents a real cut and
+  // must appear as an element (with the displayId "${id}-A").
+  const rootIsTileSource = hasPlacedChildPiece(rootId) && !placed.has(rootId);
 
   const expected = {
     tileId,
@@ -100,6 +103,7 @@ for (const tileId of [...tilesUsed].sort((a, b) => a - b)) {
     const vr = visibleRectInTile(piece, elem.slotW, elem.slotH, elem.placement);
     expected.listed.push({
       pieceId: piece.id,
+      displayId: elem.displayId,
       dispW: +dispW.toFixed(1),
       dispH: +dispH.toFixed(1),
       cutFromLeft: vr ? +vr.x.toFixed(1) : null,
@@ -157,7 +161,8 @@ for (const exp of report) {
     continue;
   }
 
-  const expIds = exp.listed.map((l) => l.pieceId).sort();
+  // Compare listed ids using DISPLAY ids (the badge text, e.g. "5-A").
+  const expIds = exp.listed.map((l) => l.displayId).sort();
   const gotIds = got.entries.map((e) => e.id).sort();
   if (JSON.stringify(expIds) !== JSON.stringify(gotIds)) {
     console.log(`tile ${exp.tileId}: LISTED MISMATCH`);
@@ -167,7 +172,7 @@ for (const exp of report) {
   }
 
   for (const l of exp.listed) {
-    const e = got.entries.find((x) => x.id === l.pieceId);
+    const e = got.entries.find((x) => x.id === l.displayId);
     if (!e) continue;
     const expDim = `${l.dispW.toFixed(1)} × ${l.dispH.toFixed(1)}`;
     if (!e.dims.includes(expDim)) {

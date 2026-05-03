@@ -89,17 +89,21 @@ export function CutTileSection({
     }
     return false;
   };
-  // True iff any descendant (NOT the piece itself) is placed. Used to tell
-  // "tile cut into multiple placed pieces" (treat root as tile-as-source)
-  // apart from "tile used whole, with stray unplaced offcuts" (root is the
-  // actual element).
+  // True iff any descendant (NOT the piece itself) is placed.
   const hasPlacedChildPiece = (pieceId: string): boolean => {
     for (const c of getChildPieces(pieces, pieceId)) {
       if (placed.has(c.id) || hasPlacedChildPiece(c.id)) return true;
     }
     return false;
   };
-  const rootIsTileSource = hasPlacedChildPiece(rootId);
+  // The root is "tile-as-source" only when it has placed descendants AND is
+  // ITSELF UNPLACED — i.e., no real cut from the source tile carries the
+  // bare root id. When the root is placed it represents a real strip from
+  // the tile (often the leftover after the named children are cut off) and
+  // must appear alongside the children. The root's display label becomes
+  // "${id}-A" in that case (see ElementEntry.displayId), disambiguating
+  // "the leftover" from "tile #N".
+  const rootIsTileSource = hasPlacedChildPiece(rootId) && !placed.has(rootId);
 
   // Identify "unused" regions of the tile.
   //
@@ -229,12 +233,13 @@ export function CutTileSection({
   const MIN_SPACING = BADGE_HEIGHT + 1; // vertical spacing between labels
 
   type LabelLayout = {
-    pieceId: string;
-    cx: number;        // piece centroid x (in tile)
-    cy: number;        // piece centroid y (in tile)
-    labelX: number;    // label center x (in column)
-    labelY: number;    // label center y (in column)
-    badgeW: number;    // badge width (in viewBox units)
+    pieceId: string;     // piece's stable id (used as a React key)
+    displayId: string;   // visual label text (may be "${id}-A")
+    cx: number;
+    cy: number;
+    labelX: number;
+    labelY: number;
+    badgeW: number;
   };
 
   // Step 1: compute centroids and sort labels by Y (top to bottom).
@@ -259,6 +264,7 @@ export function CutTileSection({
       );
       return {
         pieceId: e.pieceId,
+        displayId: e.displayId,
         cx: centroid.x,
         cy: centroid.y,
       };
@@ -272,7 +278,7 @@ export function CutTileSection({
   let prevY = COLUMN_TOP - MIN_SPACING;
   for (const l of labelsToPlace) {
     const y = Math.max(prevY + MIN_SPACING, Math.min(COLUMN_BOTTOM, l.cy));
-    const badgeW = l.pieceId.length * CHAR_W + BADGE_PAD * 2;
+    const badgeW = l.displayId.length * CHAR_W + BADGE_PAD * 2;
     labels.push({ ...l, labelX: COLUMN_X, labelY: y, badgeW });
     prevY = y;
   }
@@ -399,7 +405,7 @@ export function CutTileSection({
                   fontSize="2.4"
                   fontWeight="bold"
                 >
-                  {l.pieceId}
+                  {l.displayId}
                 </text>
               </g>
             ))}
@@ -418,11 +424,15 @@ export function CutTileSection({
           // visualized via the gray-out on the tile image and the bottom
           // "unused area" footer; listing them as separate entries is noise.
           if (!pl) return null;
-          // Hide the root "whole tile" entry only when the tile has been
-          // cut into multiple PLACED pieces — in that case the root is
-          // tile-as-source and listing it alongside the cuts is noise.
-          // If the only sub-pieces are unplaced stray offcuts, keep the
-          // root entry: the user is using the tile whole.
+          // Skip pieces whose placement references a slot that no longer
+          // exists in the wall's grid (stale data after the wall was
+          // reshaped). These pieces are also missing from the wall preview
+          // (computeGrid doesn't emit the stale slot), so listing them
+          // here with garbled dimensions would mislead.
+          if (!elemByPieceId.has(piece.id)) return null;
+          // When the root has been replaced by named children (root not
+          // placed itself, descendants are), hide the root from the list —
+          // it's purely the abstract source.
           if (piece.id === rootId && rootIsTileSource) {
             return null;
           }
@@ -458,10 +468,11 @@ export function CutTileSection({
             dispH = Math.max(0, usedBottom - usedTop);
           }
 
+          const displayId = elem?.displayId ?? piece.id;
           return (
             <div key={piece.id} className={styles.pieceDesc}>
               <div className={styles.pieceHeader}>
-                <span className={styles.pieceBadge}>{piece.id}</span>
+                <span className={styles.pieceBadge}>{displayId}</span>
                 <span className={styles.pieceDims}>
                   {dispW.toFixed(1)} × {dispH.toFixed(1)} см
                   {isLeftover ? ` (${t.leftover})` : ''}
