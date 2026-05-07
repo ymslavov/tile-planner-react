@@ -41,8 +41,14 @@ export function TileImage({
 
     let rotStyle: React.CSSProperties = {};
     if (placementRotation !== 0) {
-      const originX = (ir.x - offsetX + slotW / 2) * scale;
-      const originY = (ir.y - offsetY + slotH / 2) * scale;
+      // Pivot around the PIECE center (not the slot center). For pieces that
+      // fully fill their slot the two are identical, but for pieces whose
+      // bounding box extends past the slot — e.g. an offcut placed flush to
+      // one edge with the rest hanging out — slot-centered rotation would
+      // leave the SAME source pixels visible (just visually flipped), so a
+      // piece and its offcut both end up showing the same texture region.
+      const originX = (ir.x + piece.width / 2) * scale;
+      const originY = (ir.y + piece.height / 2) * scale;
       rotStyle = {
         transform: `rotate(${placementRotation}deg)`,
         transformOrigin: `${originX}px ${originY}px`,

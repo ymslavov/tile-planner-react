@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { buildElementList } from '../src/services/printData.ts';
+import { buildElementList, visibleSourceRectForPlacement } from '../src/services/printData.ts';
 import { getChildPieces } from '../src/services/pieceHelpers.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -33,21 +33,7 @@ function placedSet(walls) {
 }
 
 function visibleRectInTile(piece, slotW, slotH, placement) {
-  const ir = piece.imageRegion;
-  const offX = placement.offsetX ?? 0;
-  const offY = placement.offsetY ?? 0;
-  const isRotated =
-    Math.abs(piece.width - ir.w) > 0.01 &&
-    Math.abs(piece.width - ir.h) < 0.01;
-  const vxL = Math.max(0, -offX);
-  const vyT = Math.max(0, -offY);
-  const vxR = Math.min(piece.width, slotW - offX);
-  const vyB = Math.min(piece.height, slotH - offY);
-  if (vxR <= vxL || vyB <= vyT) return null;
-  if (isRotated) {
-    return { x: ir.x + ir.w - vyB, y: ir.y + vxL, w: vyB - vyT, h: vxR - vxL };
-  }
-  return { x: ir.x + vxL, y: ir.y + vyT, w: vxR - vxL, h: vyB - vyT };
+  return visibleSourceRectForPlacement(piece, placement, slotW, slotH);
 }
 
 const elements = buildElementList(fixture.walls, fixture.pieces, fixture.orientation);

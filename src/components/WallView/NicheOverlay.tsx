@@ -75,8 +75,8 @@ function NicheBackImage({ piece, rotation, offsetX, offsetY, scale }: NicheBackI
 
   let rotCss: React.CSSProperties = {};
   if (rotation !== 0) {
-    const ox = (ir.x - offsetX + piece.width / 2) * scale;
-    const oy = (ir.y - offsetY + piece.height / 2) * scale;
+    const ox = (ir.x + piece.width / 2) * scale;
+    const oy = (ir.y + piece.height / 2) * scale;
     rotCss = {
       transform: `rotate(${rotation}deg)`,
       transformOrigin: `${ox}px ${oy}px`,

@@ -7,7 +7,11 @@ import {
 } from '../../services/pieceHelpers';
 import type { Orientation } from '../../store/types';
 import { tileImageUrl } from '../../constants';
-import { placedPieceCentroidInTile, type ElementEntry } from '../../services/printData';
+import {
+  placedPieceCentroidInTile,
+  visibleSourceRectForPlacement,
+  type ElementEntry,
+} from '../../services/printData';
 import { t } from './i18n';
 import styles from './CutSheet.module.css';
 
@@ -129,33 +133,13 @@ export function CutTileSection({
     }
     const elem = elemByPieceId.get(piece.id);
     if (!elem) continue;
-    const ir = piece.imageRegion;
-    const offX = elem.placement.offsetX ?? 0;
-    const offY = elem.placement.offsetY ?? 0;
-    const isRotated =
-      Math.abs(piece.width - ir.w) > 0.01 &&
-      Math.abs(piece.width - ir.h) < 0.01;
-    const vxL = Math.max(0, -offX);
-    const vyT = Math.max(0, -offY);
-    const vxR = Math.min(piece.width, elem.slotW - offX);
-    const vyB = Math.min(piece.height, elem.slotH - offY);
-    if (vxR <= vxL || vyB <= vyT) continue;
-    let rect: Rect;
-    if (isRotated) {
-      rect = {
-        x: ir.x + ir.w - vyB,
-        y: ir.y + vxL,
-        w: vyB - vyT,
-        h: vxR - vxL,
-      };
-    } else {
-      rect = {
-        x: ir.x + vxL,
-        y: ir.y + vyT,
-        w: vxR - vxL,
-        h: vyB - vyT,
-      };
-    }
+    const rect = visibleSourceRectForPlacement(
+      piece,
+      elem.placement,
+      elem.slotW,
+      elem.slotH
+    );
+    if (!rect) continue;
     visibleRects.push(rect);
     visibleByPieceId.set(piece.id, rect);
   }

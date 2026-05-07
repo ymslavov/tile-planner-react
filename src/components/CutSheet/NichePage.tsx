@@ -257,8 +257,8 @@ function NicheSurfaceCell({
                   width: `${60 * scale}mm`,
                   height: `${120 * scale}mm`,
                   transform: `rotate(${rotation}deg)`,
-                  transformOrigin: `${(ir.x - offsetX + wCm / 2) * scale}mm ${
-                    (ir.y - offsetY + hCm / 2) * scale
+                  transformOrigin: `${(ir.x + piece.width / 2) * scale}mm ${
+                    (ir.y + piece.height / 2) * scale
                   }mm`,
                 }}
               />

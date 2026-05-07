@@ -8,6 +8,7 @@ import type {
 import { computeGrid, computeNicheOverlap } from './gridEngine';
 import { getEffectiveDims, getPlacedPieceIds } from './pieceHelpers';
 import { getDisplayPieceId } from './displayId';
+import { computeOffcutImageRegion } from './offcutEngine';
 
 /**
  * Element list for the cut sheet — every placed piece across all walls and
@@ -178,15 +179,49 @@ export function computeWallPlacements(
 }
 
 /**
- * Compute the centroid (in original-tile-image coords) of the part of a placed
+ * Sub-rect of the SOURCE TILE that's actually shown in the slot for this
+ * placement. The renderer rotates around the piece center, so for rot=180
+ * the visible source pixels are the *mirror* (about the piece center) of
+ * what's visible at rot=0 — not the same source pixels. Using the engine's
+ * piece-local-rotated → source mapping keeps cut sheet, gray-out mask, and
+ * cutline outlines aligned with what the worker actually sees.
+ *
+ * Returns null when the slot doesn't overlap the piece at all (defensive;
+ * shouldn't happen for actual placements).
+ */
+export function visibleSourceRectForPlacement(
+  piece: Piece,
+  placement: Placement,
+  slotW: number,
+  slotH: number
+): { x: number; y: number; w: number; h: number } | null {
+  const offX = placement.offsetX ?? 0;
+  const offY = placement.offsetY ?? 0;
+  const rotation = placement.rotation || 0;
+  const eff = getEffectiveDims(piece, rotation);
+  // Visible region in piece-local-ROTATED frame (where the rotated piece's
+  // TL is at (0,0) and dims are eff.w × eff.h).
+  const vxL = Math.max(0, -offX);
+  const vyT = Math.max(0, -offY);
+  const vxR = Math.min(eff.w, slotW - offX);
+  const vyB = Math.min(eff.h, slotH - offY);
+  if (vxR <= vxL || vyB <= vyT) return null;
+  return computeOffcutImageRegion(
+    piece,
+    rotation,
+    vxL,
+    vyT,
+    vxR - vxL,
+    vyB - vyT
+  );
+}
+
+/**
+ * Compute the centroid (in source-tile-image coords) of the part of a placed
  * piece that's actually visible in its slot. When a piece is placed in a slot
  * smaller than the piece itself, only a sub-rectangle of the piece is used;
  * the leader-line dot must point to that sub-rectangle, not the piece's
  * full bounding box, so nested offcuts don't all cluster at the same dot.
- *
- * Rotation handling: only rotation 0 is treated explicitly. For other
- * rotations the formula falls back to the unrotated rectangle, which is a
- * reasonable visual approximation for marble tiles.
  */
 export function placedPieceCentroidInTile(
   piece: Piece,
@@ -195,22 +230,11 @@ export function placedPieceCentroidInTile(
   slotH: number
 ): { x: number; y: number } {
   const ir = piece.imageRegion;
-  const offX = placement.offsetX ?? 0;
-  const offY = placement.offsetY ?? 0;
-
-  const usedLeft = Math.max(0, -offX);
-  const usedTop = Math.max(0, -offY);
-  const usedRight = Math.min(piece.width, slotW - offX);
-  const usedBottom = Math.min(piece.height, slotH - offY);
-
-  if (usedRight <= usedLeft || usedBottom <= usedTop) {
+  const rect = visibleSourceRectForPlacement(piece, placement, slotW, slotH);
+  if (!rect) {
     return { x: ir.x + ir.w / 2, y: ir.y + ir.h / 2 };
   }
-
-  return {
-    x: ir.x + (usedLeft + usedRight) / 2,
-    y: ir.y + (usedTop + usedBottom) / 2,
-  };
+  return { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 };
 }
 
 /**

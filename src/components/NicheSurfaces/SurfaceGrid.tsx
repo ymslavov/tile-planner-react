@@ -202,8 +202,8 @@ function SlotCell({
 
   let rotCss: React.CSSProperties = {};
   if (rot !== 0 && piece) {
-    const ox = (ir.x - effOffsetX + slot.w / 2) * surfaceScale;
-    const oy = (ir.y - effOffsetY + slot.h / 2) * surfaceScale;
+    const ox = (ir.x + piece.width / 2) * surfaceScale;
+    const oy = (ir.y + piece.height / 2) * surfaceScale;
     rotCss = {
       transform: `rotate(${rot}deg)`,
       transformOrigin: `${ox}px ${oy}px`,
